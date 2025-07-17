@@ -1,0 +1,57 @@
+# Clariti Server Configuration
+# This is a sample configuration file for Clariti API server
+
+server:
+  host: "localhost"
+  port: "8080"
+  # Optional: TLS/HTTPS configuration
+  # cert_file: "/path/to/certificate.crt"
+  # key_file: "/path/to/private.key"
+
+auth:
+  admin_username: "admin"
+  admin_password: "password123"
+
+components:
+  platforms:
+    - name: "Production"
+      code: "PROD"
+      instances:
+        - name: "Main App"
+          code: "main"
+          components:
+            - name: "API"
+              code: "api"
+            - name: "Database"
+              code: "db"
+            - name: "Cache"
+              code: "cache"
+        - name: "Background Jobs"
+          code: "jobs"
+          components:
+            - name: "Queue"
+              code: "queue"
+            - name: "Workers"
+              code: "workers"
+    
+    - name: "Staging"
+      code: "STG"
+      instances:
+        - name: "Test Environment"
+          code: "test"
+          components:
+            - name: "API"
+              code: "api"
+            - name: "Database"
+              code: "db"
+
+    - name: "Development"
+      code: "DEV"
+      instances:
+        - name: "Local Development"
+          code: "local"
+          components:
+            - name: "API"
+              code: "api"
+            - name: "Database"
+              code: "db"

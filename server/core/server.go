@@ -44,12 +44,13 @@ func New(configPath string) (*Server, error) {
 	// Setup routes
 	routes.Setup(mux, handlers, cfg)
 
-	// Apply middleware
-	handler := middleware.CORS(middleware.BasicAuth(cfg)(mux))
-
+	// Configure server with timeouts
 	httpServer := &http.Server{
-		Addr:    cfg.GetAddress(),
-		Handler: handler,
+		Addr:         cfg.GetAddress(),
+		Handler:      middleware.CORS(middleware.BasicAuth(cfg)(mux)),
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
 	}
 
 	return &Server{
@@ -88,6 +89,11 @@ func NewWithConfig(cfg *config.Config, storage drivers.EventStorage) *Server {
 	}
 }
 
+// Handler returns the HTTP handler for testing purposes
+func (s *Server) Handler() http.Handler {
+	return s.httpServer.Handler
+}
+
 // Run starts the server and handles graceful shutdown
 func (s *Server) Run() error {
 	// Channel to listen for interrupt signal to terminate
@@ -96,8 +102,20 @@ func (s *Server) Run() error {
 
 	// Start server in a goroutine
 	go func() {
-		log.Printf("Starting Clariti server on %s", s.config.GetAddress())
-		if err := s.httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		scheme := "HTTP"
+		if s.config.IsHTTPSEnabled() {
+			scheme = "HTTPS"
+		}
+		log.Printf("Starting Clariti server (%s) on %s", scheme, s.config.GetAddress())
+		
+		var err error
+		if s.config.IsHTTPSEnabled() {
+			err = s.httpServer.ListenAndServeTLS(s.config.Server.CertFile, s.config.Server.KeyFile)
+		} else {
+			err = s.httpServer.ListenAndServe()
+		}
+		
+		if err != nil && err != http.ErrServerClosed {
 			log.Fatalf("Server failed to start: %v", err)
 		}
 	}()
@@ -128,9 +146,4 @@ func (s *Server) GetConfig() *config.Config {
 // GetStorage returns the storage driver
 func (s *Server) GetStorage() drivers.EventStorage {
 	return s.storage
-}
-
-// Handler returns the HTTP handler for testing purposes
-func (s *Server) Handler() http.Handler {
-	return s.httpServer.Handler
 }

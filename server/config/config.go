@@ -17,8 +17,10 @@ type Config struct {
 
 // ServerConfig holds server-specific configuration
 type ServerConfig struct {
-	Port string `yaml:"port"`
-	Host string `yaml:"host"`
+	Port     string `yaml:"port"`
+	Host     string `yaml:"host"`
+	CertFile string `yaml:"cert_file,omitempty"` // Optional TLS certificate file
+	KeyFile  string `yaml:"key_file,omitempty"`  // Optional TLS private key file
 }
 
 // AuthConfig holds authentication configuration
@@ -152,4 +154,22 @@ func (c *Config) GetAllComponents() []component.Component {
 		}
 	}
 	return components
+}
+
+// IsHTTPSEnabled returns true if both cert and key files are configured
+func (c *Config) IsHTTPSEnabled() bool {
+	return c.Server.CertFile != "" && c.Server.KeyFile != ""
+}
+
+// GetScheme returns "https" if HTTPS is enabled, "http" otherwise
+func (c *Config) GetScheme() string {
+	if c.IsHTTPSEnabled() {
+		return "https"
+	}
+	return "http"
+}
+
+// GetFullURL returns the full URL for the server (http://host:port or https://host:port)
+func (c *Config) GetFullURL() string {
+	return fmt.Sprintf("%s://%s", c.GetScheme(), c.GetAddress())
 }

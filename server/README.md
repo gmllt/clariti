@@ -24,6 +24,7 @@ The server is built with a clean, modular architecture:
 - ✅ Health check endpoint
 - ✅ Graceful shutdown with signal handling
 - ✅ Auto-generated API documentation endpoint
+- ✅ Optional HTTPS/TLS support
 
 ## Configuration
 
@@ -33,6 +34,9 @@ Create a `config.yaml` file with the following hierarchical structure:
 server:
   host: localhost
   port: "8080"
+  # Optional: Enable HTTPS by providing certificate files
+  # cert_file: "/path/to/certificate.crt"
+  # key_file: "/path/to/private.key"
 
 auth:
   admin_username: admin
@@ -221,3 +225,36 @@ func main() {
     server.Run()
 }
 ```
+
+## HTTPS/TLS Support
+
+The server supports optional HTTPS/TLS encryption. To enable it:
+
+1. **Obtain certificates**: Either generate self-signed certificates for testing or obtain valid certificates for production.
+
+2. **For testing/development**, use the provided script:
+   ```bash
+   cd local/
+   ./generate-certs.sh
+   ```
+
+3. **Configure HTTPS** in your `config.yaml`:
+   ```yaml
+   server:
+     host: localhost
+     port: "8443"  # Standard HTTPS port alternative
+     cert_file: "local/server.crt"
+     key_file: "local/server.key"
+   ```
+
+4. **Start the server** - it will automatically detect the certificates and enable HTTPS:
+   ```bash
+   ./clariti-server
+   # Output: Starting Clariti server (HTTPS) on localhost:8443
+   ```
+
+### Notes on HTTPS:
+- Both `cert_file` and `key_file` must be specified to enable HTTPS
+- If only one is provided, the server will start in HTTP mode
+- Self-signed certificates will show browser warnings (safe to ignore for testing)
+- Use valid certificates from a trusted CA for production
