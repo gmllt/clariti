@@ -60,6 +60,34 @@ func New(configPath string) (*Server, error) {
 	}, nil
 }
 
+// NewWithConfig creates a new server instance with provided config and storage (useful for testing)
+func NewWithConfig(cfg *config.Config, storage drivers.EventStorage) *Server {
+	// Initialize handlers
+	handlers := handlers.New(storage, cfg)
+
+	// Create HTTP server
+	mux := http.NewServeMux()
+
+	// Setup routes
+	routes.Setup(mux, handlers, cfg)
+
+	// Configure server with timeouts
+	httpServer := &http.Server{
+		Addr:         cfg.GetAddress(),
+		Handler:      middleware.CORS(middleware.BasicAuth(cfg)(mux)),
+		ReadTimeout:  30 * time.Second,
+		WriteTimeout: 30 * time.Second,
+		IdleTimeout:  120 * time.Second,
+	}
+
+	return &Server{
+		config:     cfg,
+		storage:    storage,
+		httpServer: httpServer,
+		handlers:   handlers,
+	}
+}
+
 // Run starts the server and handles graceful shutdown
 func (s *Server) Run() error {
 	// Channel to listen for interrupt signal to terminate
@@ -100,4 +128,9 @@ func (s *Server) GetConfig() *config.Config {
 // GetStorage returns the storage driver
 func (s *Server) GetStorage() drivers.EventStorage {
 	return s.storage
+}
+
+// Handler returns the HTTP handler for testing purposes
+func (s *Server) Handler() http.Handler {
+	return s.httpServer.Handler
 }
