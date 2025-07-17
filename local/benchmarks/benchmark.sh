@@ -91,7 +91,7 @@ run_benchmark() {
     
     cd "$PROJECT_ROOT"
     go test $benchmark_args "$package" 2>/dev/null || {
-        echo "❌ Failed to run benchmarks for $package" >&2
+        echo "[ERROR] Failed to run benchmarks for $package" >&2
         return 1
     }
 }
@@ -109,7 +109,7 @@ discover_benchmark_packages() {
 
 # Main execution
 main() {
-    echo "🚀 Running Clariti Benchmarks"
+    echo "[BENCHMARK] Running Clariti Benchmarks"
     echo "=============================="
     echo "Configuration:"
     echo "  • Timeout: $BENCHMARK_TIMEOUT"
@@ -122,7 +122,7 @@ main() {
     local packages=($(discover_benchmark_packages))
     
     if [[ ${#packages[@]} -eq 0 ]]; then
-        echo "❌ No benchmark packages found"
+        echo "[ERROR] No benchmark packages found"
         exit 1
     fi
     
@@ -132,7 +132,7 @@ main() {
     local results=""
     for package in "${packages[@]}"; do
         local name=$(echo "$package" | sed 's|/| |g' | awk '{print $NF}')
-        echo "📊 Running benchmarks for $name..."
+        echo "[RUN] Running benchmarks for $name..."
         echo "----------------------------------"
         
         local output
@@ -140,7 +140,7 @@ main() {
             echo "$output"
             results="$results$output\n"
         else
-            echo "⚠️  Skipped $package due to errors"
+            echo "[WARNING] Skipped $package due to errors"
         fi
         echo ""
     done
@@ -152,9 +152,9 @@ main() {
     fi
     
     # Generate summary
-    echo "✅ Benchmark run completed!"
-    echo "📊 Summary: Found benchmarks in ${#packages[@]} packages"
-    echo "📁 Results directory: $RESULTS_DIR"
+    echo "[SUCCESS] Benchmark run completed!"
+    echo "[SUMMARY] Summary: Found benchmarks in ${#packages[@]} packages"
+    echo "[RESULTS] Results directory: $RESULTS_DIR"
 }
 
 # Run main function

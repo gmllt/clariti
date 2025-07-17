@@ -84,14 +84,14 @@ extract_metrics() {
 
 # Generate performance baseline
 generate_baseline() {
-    echo "🎯 Generating performance baseline..."
+    echo "[BASELINE] Generating performance baseline..."
     cd "$PROJECT_ROOT"
     
     go test -bench=. -benchmem ./... 2>/dev/null | \
         grep "^Benchmark" > "$BASELINE_FILE"
     
-    echo "✅ Baseline saved to: $BASELINE_FILE"
-    echo "📊 $(wc -l < "$BASELINE_FILE") benchmarks recorded"
+    echo "[SUCCESS] Baseline saved to: $BASELINE_FILE"
+    echo "[INFO] $count benchmarks recorded"
 }
 
 # Compare current performance with baseline
@@ -101,7 +101,7 @@ compare_with_baseline() {
         exit 1
     fi
     
-    echo "📊 Comparing current performance with baseline..."
+    echo "[COMPARE] Comparing current performance with baseline..."
     
     local current_file="$RESULTS_DIR/current_$(date +%Y%m%d_%H%M%S).txt"
     cd "$PROJECT_ROOT"

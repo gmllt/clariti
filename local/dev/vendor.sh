@@ -32,78 +32,78 @@ print_usage() {
 }
 
 update_vendor() {
-    echo -e "${BLUE}📦 Updating vendor directory...${NC}"
+    echo -e "${BLUE}[VENDOR] Updating vendor directory...${NC}"
     
     # Ensure go.mod and go.sum are up to date
-    echo -e "${YELLOW}🔄 Tidying modules...${NC}"
+    echo -e "${YELLOW}[MODULES] Tidying modules...${NC}"
     go mod tidy
     
     # Download all dependencies
-    echo -e "${YELLOW}⬇️  Downloading dependencies...${NC}"
+    echo -e "${YELLOW}[DOWNLOAD] Downloading dependencies...${NC}"
     go mod download
     
     # Update vendor directory
-    echo -e "${YELLOW}📁 Updating vendor directory...${NC}"
+    echo -e "${YELLOW}[VENDOR] Updating vendor directory...${NC}"
     go mod vendor
     
-    echo -e "${GREEN}✅ Vendor directory updated successfully!${NC}"
+    echo -e "${GREEN}[SUCCESS] Vendor directory updated successfully!${NC}"
     show_vendor_stats
 }
 
 verify_vendor() {
-    echo -e "${BLUE}🔍 Verifying vendor directory...${NC}"
+    echo -e "${BLUE}[VERIFY] Verifying vendor directory...${NC}"
     
     if [ ! -d "vendor" ]; then
-        echo -e "${RED}❌ Vendor directory does not exist${NC}"
+        echo -e "${RED}[ERROR] Vendor directory does not exist${NC}"
         return 1
     fi
     
     # Check if vendor is up to date
     if go mod verify &>/dev/null; then
-        echo -e "${GREEN}✅ Vendor directory is up to date${NC}"
+        echo -e "${GREEN}[SUCCESS] Vendor directory is up to date${NC}"
         return 0
     else
-        echo -e "${RED}❌ Vendor directory is out of date${NC}"
-        echo -e "${YELLOW}💡 Run '$0 update' to fix this${NC}"
+        echo -e "${RED}[ERROR] Vendor directory is out of date${NC}"
+        echo -e "${YELLOW}[INFO] Run '$0 update' to fix this${NC}"
         return 1
     fi
 }
 
 clean_vendor() {
-    echo -e "${BLUE}🧹 Cleaning vendor directory...${NC}"
+    echo -e "${BLUE}[CLEAN] Cleaning vendor directory...${NC}"
     
     if [ -d "vendor" ]; then
         rm -rf vendor/
-        echo -e "${GREEN}✅ Vendor directory cleaned${NC}"
+        echo -e "${GREEN}[SUCCESS] Vendor directory cleaned${NC}"
     else
-        echo -e "${YELLOW}⚠️  Vendor directory doesn't exist${NC}"
+        echo -e "${YELLOW}[WARNING] Vendor directory doesn't exist${NC}"
     fi
 }
 
 show_vendor_status() {
-    echo -e "${BLUE}📊 Vendor Status${NC}"
+    echo -e "${BLUE}[STATUS] Vendor Status${NC}"
     echo "===================="
     
     if [ -d "vendor" ]; then
-        echo -e "${GREEN}✅ Vendor directory exists${NC}"
+        echo -e "${GREEN}[OK] Vendor directory exists${NC}"
         show_vendor_stats
         
         echo ""
-        echo -e "${BLUE}📋 Dependencies:${NC}"
+        echo -e "${BLUE}[DEPENDENCIES] Dependencies:${NC}"
         if [ -f "vendor/modules.txt" ]; then
             grep "^# " vendor/modules.txt | sed 's/^# /  - /'
         fi
         
         echo ""
-        echo -e "${BLUE}🔍 Verification:${NC}"
+        echo -e "${BLUE}[VERIFY] Verification:${NC}"
         if go mod verify &>/dev/null; then
-            echo -e "${GREEN}✅ All dependencies verified${NC}"
+            echo -e "${GREEN}[OK] All dependencies verified${NC}"
         else
-            echo -e "${RED}❌ Some dependencies may be corrupted${NC}"
+            echo -e "${RED}[ERROR] Some dependencies may be corrupted${NC}"
         fi
     else
-        echo -e "${RED}❌ Vendor directory does not exist${NC}"
-        echo -e "${YELLOW}💡 Run '$0 update' to create it${NC}"
+        echo -e "${RED}[ERROR] Vendor directory does not exist${NC}"
+        echo -e "${YELLOW}[INFO] Run '$0 update' to create it${NC}"
     fi
 }
 
@@ -113,7 +113,7 @@ show_vendor_stats() {
         local dir_count=$(find vendor -type d | wc -l)
         local size=$(du -sh vendor 2>/dev/null | cut -f1)
         
-        echo -e "${BLUE}📈 Vendor Statistics:${NC}"
+        echo -e "${BLUE}[STATS] Vendor Statistics:${NC}"
         echo "  • Size: $size"
         echo "  • Directories: $dir_count"
         echo "  • Go files: $pkg_count"
@@ -121,35 +121,35 @@ show_vendor_stats() {
 }
 
 build_with_vendor() {
-    echo -e "${BLUE}🔨 Building with vendor directory...${NC}"
+    echo -e "${BLUE}[BUILD] Building with vendor directory...${NC}"
     
     if [ ! -d "vendor" ]; then
-        echo -e "${RED}❌ Vendor directory does not exist${NC}"
-        echo -e "${YELLOW}💡 Run '$0 update' first${NC}"
+        echo -e "${RED}[ERROR] Vendor directory does not exist${NC}"
+        echo -e "${YELLOW}[INFO] Run '$0 update' first${NC}"
         return 1
     fi
     
     # Build using vendor
-    echo -e "${YELLOW}🏗️  Building project...${NC}"
+    echo -e "${YELLOW}[COMPILE] Building project...${NC}"
     go build -mod=vendor -v ./...
     
-    echo -e "${GREEN}✅ Build completed using vendor directory${NC}"
+    echo -e "${GREEN}[SUCCESS] Build completed using vendor directory${NC}"
 }
 
 test_with_vendor() {
-    echo -e "${BLUE}🧪 Testing with vendor directory...${NC}"
+    echo -e "${BLUE}[TEST] Testing with vendor directory...${NC}"
     
     if [ ! -d "vendor" ]; then
-        echo -e "${RED}❌ Vendor directory does not exist${NC}"
-        echo -e "${YELLOW}💡 Run '$0 update' first${NC}"
+        echo -e "${RED}[ERROR] Vendor directory does not exist${NC}"
+        echo -e "${YELLOW}[INFO] Run '$0 update' first${NC}"
         return 1
     fi
     
     # Test using vendor
-    echo -e "${YELLOW}🔬 Running tests...${NC}"
+    echo -e "${YELLOW}[RUN] Running tests...${NC}"
     go test -mod=vendor -v ./...
     
-    echo -e "${GREEN}✅ Tests completed using vendor directory${NC}"
+    echo -e "${GREEN}[SUCCESS] Tests completed using vendor directory${NC}"
 }
 
 # Main script logic
@@ -178,13 +178,13 @@ case "${1:-}" in
         print_usage
         ;;
     "")
-        echo -e "${YELLOW}⚠️  No command specified${NC}"
+        echo -e "${YELLOW}[WARNING] No command specified${NC}"
         echo ""
         print_usage
         exit 1
         ;;
     *)
-        echo -e "${RED}❌ Unknown command: $1${NC}"
+        echo -e "${RED}[ERROR] Unknown command: $1${NC}"
         echo ""
         print_usage
         exit 1
