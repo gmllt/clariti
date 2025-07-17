@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/gmllt/clariti/models/event"
 	"github.com/gmllt/clariti/server/drivers"
@@ -47,8 +46,8 @@ func (h *IncidentHandler) HandleIncidents(w http.ResponseWriter, r *http.Request
 
 // HandleIncidentByID handles /incidents/{id} endpoint
 func (h *IncidentHandler) HandleIncidentByID(w http.ResponseWriter, r *http.Request) {
-	// Extract ID from path
-	id := strings.TrimPrefix(r.URL.Path, "/api/incidents/")
+	// Extract ID from path parameter
+	id := r.PathValue("id")
 	if id == "" {
 		h.writeError(w, http.StatusBadRequest, "Missing incident ID")
 		return

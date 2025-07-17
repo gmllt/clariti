@@ -26,7 +26,9 @@ log_list "Security Tools" \
 log_section "Configuration Examples"
 log_list "Config Templates" \
     "BASIC: ./local/config/config.example.yaml - Basic configuration template" \
-    "HTTPS: ./local/config/config.https.yaml - HTTPS configuration example"
+    "HTTPS: ./local/config/config.https.yaml - HTTPS configuration example" \
+    "RAM: ./local/config/config.ram.yaml - RAM storage configuration" \
+    "S3: ./local/config/config.s3.yaml - S3 storage configuration"
 
 log_section "Quick Commands"
 log_info "Run quality checks:"

@@ -132,8 +132,43 @@ The `analyze.sh` script provides advanced performance analysis:
 
 | File | Purpose |
 |------|---------|
-| `config.example.yaml` | Basic configuration template |
-| `config.https.yaml` | HTTPS-enabled configuration example |
+| `config.example.yaml` | Basic development configuration with RAM storage |
+| `config.https.yaml` | HTTPS-enabled configuration |
+| `config.ram.yaml` | RAM storage configuration (data lost on restart) |
+| `config.s3.yaml` | S3 storage configuration for persistent data |
+
+### Storage Drivers
+
+The application supports multiple storage drivers for event data:
+
+**RAM Storage (`ram`):**
+- In-memory storage (default)
+- Fast performance
+- Data lost on application restart
+- Suitable for development and testing
+
+**S3 Storage (`s3`):**
+- Persistent storage using AWS S3 or S3-compatible services
+- Data survives application restarts
+- Supports AWS IAM roles or access keys
+- Configurable bucket, region, and object prefix
+- Suitable for production environments
+
+**Storage Configuration:**
+```yaml
+storage:
+  driver: "s3"  # Options: "ram", "s3"
+  s3:
+    region: "us-east-1"
+    bucket: "my-clariti-bucket"
+    # Optional credentials (use IAM roles when possible)
+    access_key_id: "AKIAIOSFODNN7EXAMPLE"
+    secret_access_key: "secret"
+    # Optional S3-compatible endpoint
+    endpoint: "http://localhost:9000"
+    # Optional object key prefix
+    prefix: "clariti/"
+```
 
 ## HTTPS Tools (`certs/`)
 

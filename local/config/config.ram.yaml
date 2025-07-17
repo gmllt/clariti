@@ -1,0 +1,25 @@
+server:
+  host: "localhost"
+  port: "8080"
+
+auth:
+  admin_username: "admin"
+  admin_password: "password"
+
+# Storage configuration
+storage:
+  driver: "ram"  # In-memory storage (data lost on restart)
+
+components:
+  platforms:
+    - name: "Web Platform"
+      code: "web"
+      base_url: "https://example.com"
+      instances:
+        - name: "Production"
+          code: "prod"
+          components:
+            - name: "Web Frontend"
+              code: "web-frontend"
+            - name: "API Gateway"
+              code: "api-gateway"

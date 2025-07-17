@@ -1,0 +1,61 @@
+server:
+  host: "localhost"
+  port: "8080"
+  # For HTTPS support (optional)
+  # cert_file: "local/certs/server.crt"
+  # key_file: "local/certs/server.key"
+
+auth:
+  admin_username: "admin"
+  admin_password: "password"
+
+# Storage configuration
+storage:
+  driver: "s3"  # Options: "ram", "s3"
+  s3:
+    region: "us-east-1"
+    bucket: "my-clariti-bucket"
+    # Optional: Access credentials (if not using IAM roles/instance profiles)
+    access_key_id: "admin"
+    secret_access_key: "adminadmin"
+    
+    # Optional: S3-compatible endpoint (for MinIO, etc.)
+    endpoint: "http://localhost:9000"
+    
+    # Optional: Prefix for object keys (useful for multi-tenancy)
+    prefix: "clariti/"
+
+components:
+  platforms:
+    - name: "Web Platform"
+      code: "web"
+      base_url: "https://example.com"
+      instances:
+        - name: "Production"
+          code: "prod"
+          components:
+            - name: "Web Frontend"
+              code: "web-frontend"
+            - name: "API Gateway"
+              code: "api-gateway"
+            - name: "User Authentication"
+              code: "auth-service"
+        - name: "Staging"
+          code: "staging"
+          components:
+            - name: "Web Frontend"
+              code: "web-frontend"
+            - name: "API Gateway"
+              code: "api-gateway"
+
+    - name: "Database Platform"
+      code: "database"
+      base_url: "https://db.example.com"
+      instances:
+        - name: "Primary Database"
+          code: "primary"
+          components:
+            - name: "PostgreSQL Cluster"
+              code: "postgres-cluster"
+            - name: "Redis Cache"
+              code: "redis-cache"

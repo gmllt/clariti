@@ -30,11 +30,11 @@ func setupV1ComponentRoutes(mux *http.ServeMux, h *handlers.Handlers) {
 func setupV1EventRoutes(mux *http.ServeMux, h *handlers.Handlers) {
 	// Incident endpoints
 	mux.HandleFunc("/api/v1/incidents", h.Incident.HandleIncidents)
-	mux.HandleFunc("/api/v1/incidents/", h.Incident.HandleIncidentByID)
+	mux.HandleFunc("/api/v1/incidents/{id}", h.Incident.HandleIncidentByID)
 
 	// Planned maintenance endpoints
 	mux.HandleFunc("/api/v1/planned-maintenances", h.PlannedMaintenance.HandlePlannedMaintenances)
-	mux.HandleFunc("/api/v1/planned-maintenances/", h.PlannedMaintenance.HandlePlannedMaintenanceByID)
+	mux.HandleFunc("/api/v1/planned-maintenances/{id}", h.PlannedMaintenance.HandlePlannedMaintenanceByID)
 }
 
 // setupV1WeatherRoutes configures weather/status endpoints for v1

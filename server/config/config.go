@@ -13,6 +13,7 @@ type Config struct {
 	Server     ServerConfig     `yaml:"server"`
 	Auth       AuthConfig       `yaml:"auth"`
 	Components ComponentsConfig `yaml:"components"`
+	Storage    StorageConfig    `yaml:"storage"`
 }
 
 // ServerConfig holds server-specific configuration
@@ -55,6 +56,22 @@ type ComponentConfig struct {
 	Code string `yaml:"code"`
 }
 
+// StorageConfig holds the storage driver configuration
+type StorageConfig struct {
+	Driver string   `yaml:"driver"` // "ram" or "s3"
+	S3     S3Config `yaml:"s3,omitempty"`
+}
+
+// S3Config holds S3-specific configuration
+type S3Config struct {
+	Region          string `yaml:"region"`
+	Bucket          string `yaml:"bucket"`
+	AccessKeyID     string `yaml:"access_key_id,omitempty"`     // Optional, can use IAM roles
+	SecretAccessKey string `yaml:"secret_access_key,omitempty"` // Optional, can use IAM roles
+	Endpoint        string `yaml:"endpoint,omitempty"`          // Optional, for S3-compatible services
+	Prefix          string `yaml:"prefix,omitempty"`            // Optional, prefix for object keys
+}
+
 // LoadConfig loads configuration from a YAML file
 func LoadConfig(configPath string) (*Config, error) {
 	file, err := os.Open(configPath)
@@ -80,6 +97,14 @@ func LoadConfig(configPath string) (*Config, error) {
 	}
 	if config.Server.Port == "" {
 		config.Server.Port = "8080"
+	}
+	if config.Storage.Driver == "" {
+		config.Storage.Driver = "ram"
+	}
+
+	// Validate storage configuration
+	if err := config.validateStorageConfig(); err != nil {
+		return nil, fmt.Errorf("invalid storage configuration: %w", err)
 	}
 
 	return &config, nil
@@ -177,4 +202,33 @@ func (c *Config) GetScheme() string {
 // GetFullURL returns the full URL for the server (http://host:port or https://host:port)
 func (c *Config) GetFullURL() string {
 	return fmt.Sprintf("%s://%s", c.GetScheme(), c.GetAddress())
+}
+
+// validateStorageConfig validates the storage configuration based on the selected driver
+func (c *Config) validateStorageConfig() error {
+	switch c.Storage.Driver {
+	case "ram":
+		// RAM driver requires no additional configuration
+		return nil
+	case "s3":
+		if c.Storage.S3.Region == "" {
+			return fmt.Errorf("s3 region is required when using s3 driver")
+		}
+		if c.Storage.S3.Bucket == "" {
+			return fmt.Errorf("s3 bucket is required when using s3 driver")
+		}
+		return nil
+	default:
+		return fmt.Errorf("unsupported storage driver: %s (supported: ram, s3)", c.Storage.Driver)
+	}
+}
+
+// GetStorageDriver returns the configured storage driver name
+func (c *Config) GetStorageDriver() string {
+	return c.Storage.Driver
+}
+
+// GetS3Config returns the S3 configuration
+func (c *Config) GetS3Config() S3Config {
+	return c.Storage.S3
 }

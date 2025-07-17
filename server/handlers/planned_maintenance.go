@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/gmllt/clariti/models/event"
 	"github.com/gmllt/clariti/server/drivers"
@@ -47,8 +46,8 @@ func (h *PlannedMaintenanceHandler) HandlePlannedMaintenances(w http.ResponseWri
 
 // HandlePlannedMaintenanceByID handles /planned-maintenances/{id} endpoint
 func (h *PlannedMaintenanceHandler) HandlePlannedMaintenanceByID(w http.ResponseWriter, r *http.Request) {
-	// Extract ID from path
-	id := strings.TrimPrefix(r.URL.Path, "/api/planned-maintenances/")
+	// Extract ID from path parameter
+	id := r.PathValue("id")
 	if id == "" {
 		h.writeError(w, http.StatusBadRequest, "Missing planned maintenance ID")
 		return
