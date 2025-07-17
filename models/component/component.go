@@ -1,6 +1,10 @@
 package component
 
-import "github.com/gmllt/clariti/utils"
+import (
+	"sync"
+
+	"github.com/gmllt/clariti/utils"
+)
 
 // BaseComponent provides common fields for all component types
 type BaseComponent struct {
@@ -12,6 +16,10 @@ type BaseComponent struct {
 type Component struct {
 	BaseComponent
 	Instance *Instance `json:"instance,omitempty"`
+
+	// Cache for normalization to avoid repeated string building
+	normalizedCache string
+	cacheMutex      sync.RWMutex
 }
 
 // NewComponent creates a new component with the given name, code and instance
@@ -30,9 +38,35 @@ func (c *Component) String() string {
 	return utils.StrUtils.BuildHierarchicalStringForComponent(c)
 }
 
-// Normalize returns a normalized identifier for the component
+// Normalize returns a normalized identifier for the component with caching
 func (c *Component) Normalize() string {
-	return utils.StrUtils.NormalizeHierarchicalComponent(c)
+	// Check cache first (read lock)
+	c.cacheMutex.RLock()
+	if c.normalizedCache != "" {
+		cached := c.normalizedCache
+		c.cacheMutex.RUnlock()
+		return cached
+	}
+	c.cacheMutex.RUnlock()
+
+	// Calculate and cache (write lock)
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	// Double-check pattern in case another goroutine calculated it
+	if c.normalizedCache != "" {
+		return c.normalizedCache
+	}
+
+	c.normalizedCache = utils.StrUtils.NormalizeHierarchicalComponent(c)
+	return c.normalizedCache
+}
+
+// ClearCache clears the normalization cache (useful when component changes)
+func (c *Component) ClearCache() {
+	c.cacheMutex.Lock()
+	c.normalizedCache = ""
+	c.cacheMutex.Unlock()
 }
 
 // HierarchicalStringable interface implementation

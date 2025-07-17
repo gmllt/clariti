@@ -6,6 +6,7 @@ import (
 
 	"github.com/gmllt/clariti/server/config"
 	"github.com/gmllt/clariti/server/drivers"
+	"github.com/gmllt/clariti/utils"
 )
 
 // APIHandler handles HTTP requests for the API
@@ -22,7 +23,7 @@ func NewAPIHandler(storage drivers.EventStorage, config *config.Config) *APIHand
 	}
 }
 
-// writeJSON writes a JSON response
+// writeJSON writes a JSON response using object pools for better performance
 func (h *APIHandler) writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -31,31 +32,39 @@ func (h *APIHandler) writeJSON(w http.ResponseWriter, status int, data interface
 	}
 }
 
-// writeError writes an error response
+// writeError writes an error response using pooled objects
 func (h *APIHandler) writeError(w http.ResponseWriter, status int, message string) {
-	h.writeJSON(w, status, map[string]string{"error": message})
+	errorMap := utils.GetStringMap()
+	errorMap["error"] = message
+	defer utils.PutStringMap(errorMap)
+
+	h.writeJSON(w, status, errorMap)
 }
 
-// Health check endpoint
+// Health check endpoint with optimized response
 func (h *APIHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
-	h.writeJSON(w, http.StatusOK, map[string]string{
-		"status":  "healthy",
-		"service": "clariti-api",
-	})
+	healthMap := utils.GetStringMap()
+	healthMap["status"] = "healthy"
+	healthMap["service"] = "clariti-api"
+	defer utils.PutStringMap(healthMap)
+
+	h.writeJSON(w, http.StatusOK, healthMap)
 }
 
-// Component info endpoints (read-only)
+// Component info endpoints (read-only) with optimized allocations
 func (h *APIHandler) HandleComponents(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		h.writeError(w, http.StatusMethodNotAllowed, "Only GET method allowed")
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, map[string]interface{}{
-		"platforms":  h.config.GetAllPlatforms(),
-		"instances":  h.config.GetAllInstances(),
-		"components": h.config.GetAllComponents(),
-	})
+	response := utils.GetJSONResponse()
+	response["platforms"] = h.config.GetAllPlatforms()
+	response["instances"] = h.config.GetAllInstances()
+	response["components"] = h.config.GetAllComponents()
+	defer utils.PutJSONResponse(response)
+
+	h.writeJSON(w, http.StatusOK, response)
 }
 
 func (h *APIHandler) HandlePlatforms(w http.ResponseWriter, r *http.Request) {
