@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/gmllt/clariti/logger"
 	"github.com/gmllt/clariti/models/component"
 	"gopkg.in/yaml.v3"
 )
@@ -14,6 +15,7 @@ type Config struct {
 	Auth       AuthConfig       `yaml:"auth"`
 	Components ComponentsConfig `yaml:"components"`
 	Storage    StorageConfig    `yaml:"storage"`
+	Logging    logger.Config    `yaml:"logging"`
 }
 
 // ServerConfig holds server-specific configuration
@@ -106,6 +108,9 @@ func LoadConfig(configPath string) (*Config, error) {
 	if err := config.validateStorageConfig(); err != nil {
 		return nil, fmt.Errorf("invalid storage configuration: %w", err)
 	}
+
+	// Initialize logger with configuration
+	logger.Init(&config.Logging)
 
 	return &config, nil
 }

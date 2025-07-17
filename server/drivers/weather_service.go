@@ -13,11 +13,11 @@ import (
 // WeatherService calculates service weather based on incidents and planned maintenances
 type WeatherService struct {
 	config  *config.Config
-	storage *RAMStorage
+	storage EventStorage
 }
 
 // NewWeatherService creates a new weather service
-func NewWeatherService(cfg *config.Config, storage *RAMStorage) *WeatherService {
+func NewWeatherService(cfg *config.Config, storage EventStorage) *WeatherService {
 	return &WeatherService{
 		config:  cfg,
 		storage: storage,

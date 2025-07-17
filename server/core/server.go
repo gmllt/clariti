@@ -2,13 +2,13 @@ package core
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/gmllt/clariti/logger"
 	"github.com/gmllt/clariti/server/config"
 	"github.com/gmllt/clariti/server/drivers"
 	"github.com/gmllt/clariti/server/handlers"
@@ -26,25 +26,41 @@ type Server struct {
 
 // New creates a new server instance
 func New(configPath string) (*Server, error) {
+	log := logger.GetDefault().WithComponent("Server")
+	log.WithField("config_path", configPath).Info("Creating new server instance")
+
 	// Load configuration
+	log.Debug("Loading configuration")
 	cfg, err := config.LoadConfig(configPath)
 	if err != nil {
+		log.WithError(err).Error("Failed to load configuration")
 		return nil, err
 	}
+	log.Info("Configuration loaded successfully")
 
 	// Initialize storage driver
-	storage := drivers.NewRAMStorage()
+	log.Info("Initializing storage driver")
+	storage, err := drivers.NewStorage(cfg)
+	if err != nil {
+		log.WithError(err).Error("Failed to initialize storage driver")
+		return nil, err
+	}
+	log.Info("Storage driver initialized successfully")
 
 	// Initialize handlers
+	log.Debug("Initializing request handlers")
 	handlers := handlers.New(storage, cfg)
 
 	// Create HTTP server
+	log.Debug("Setting up HTTP routes")
 	mux := http.NewServeMux()
 
 	// Setup routes
 	routes.Setup(mux, handlers, cfg)
+	log.Info("HTTP routes configured")
 
 	// Configure server with timeouts
+	log.Debug("Configuring HTTP server with timeouts")
 	httpServer := &http.Server{
 		Addr:         cfg.GetAddress(),
 		Handler:      middleware.CORS(middleware.BasicAuth(cfg)(mux)),
@@ -53,6 +69,7 @@ func New(configPath string) (*Server, error) {
 		IdleTimeout:  120 * time.Second,
 	}
 
+	log.WithField("address", cfg.GetAddress()).Info("Server instance created successfully")
 	return &Server{
 		config:     cfg,
 		storage:    storage,
@@ -96,45 +113,57 @@ func (s *Server) Handler() http.Handler {
 
 // Run starts the server and handles graceful shutdown
 func (s *Server) Run() error {
+	log := logger.GetDefault().WithComponent("Server")
+	log.Info("Starting server run sequence")
+
 	// Channel to listen for interrupt signal to terminate
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	log.Debug("Signal handlers configured for graceful shutdown")
 
 	// Start server in a goroutine
 	go func() {
 		scheme := "HTTP"
 		if s.config.IsHTTPSEnabled() {
 			scheme = "HTTPS"
+			log.WithField("cert_file", s.config.Server.CertFile).Info("HTTPS mode enabled")
 		}
-		log.Printf("Starting Clariti server (%s) on %s", scheme, s.config.GetAddress())
-		
+
+		address := s.config.GetAddress()
+		log.WithField("scheme", scheme).WithField("address", address).Info("Starting Clariti server")
+
 		var err error
 		if s.config.IsHTTPSEnabled() {
+			log.Debug("Starting HTTPS server")
 			err = s.httpServer.ListenAndServeTLS(s.config.Server.CertFile, s.config.Server.KeyFile)
 		} else {
+			log.Debug("Starting HTTP server")
 			err = s.httpServer.ListenAndServe()
 		}
-		
+
 		if err != nil && err != http.ErrServerClosed {
-			log.Fatalf("Server failed to start: %v", err)
+			log.WithError(err).Error("Server failed to start")
+			panic(err) // Fatal error
 		}
 	}()
 
 	// Wait for interrupt signal
+	log.Info("Server ready, waiting for requests")
 	<-stop
-	log.Println("Shutting down server...")
+	log.Warn("Shutdown signal received, stopping server")
 
 	// Create a context with timeout for graceful shutdown
+	log.Info("Starting graceful shutdown with 30s timeout")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
 	// Attempt graceful shutdown
 	if err := s.httpServer.Shutdown(ctx); err != nil {
-		log.Printf("Server forced to shutdown: %v", err)
+		log.WithError(err).Error("Server forced to shutdown")
 		return err
 	}
 
-	log.Println("Server stopped gracefully")
+	log.Info("Server stopped gracefully")
 	return nil
 }
 

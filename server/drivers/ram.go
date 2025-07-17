@@ -4,6 +4,7 @@ import (
 	"errors"
 	"sync"
 
+	"github.com/gmllt/clariti/logger"
 	"github.com/gmllt/clariti/models/event"
 )
 
@@ -21,32 +22,50 @@ type RAMStorage struct {
 
 // NewRAMStorage creates a new in-memory storage driver
 func NewRAMStorage() *RAMStorage {
-	return &RAMStorage{
+	log := logger.GetDefault().WithComponent("RAMStorage")
+	log.Info("Initializing RAM storage driver")
+
+	storage := &RAMStorage{
 		incidents:           make(map[string]*event.Incident),
 		plannedMaintenances: make(map[string]*event.PlannedMaintenance),
 	}
+
+	log.Info("RAM storage driver initialized successfully")
+	return storage
 }
 
 // Incidents implementation
 func (r *RAMStorage) CreateIncident(incident *event.Incident) error {
+	log := logger.GetDefault().WithComponent("RAMStorage")
+	log.WithField("incident_id", incident.GUID).Info("Creating incident in RAM")
+
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
 	if _, exists := r.incidents[incident.GUID]; exists {
+		log.WithField("incident_id", incident.GUID).Warn("Incident already exists")
 		return ErrExists
 	}
+
 	r.incidents[incident.GUID] = incident
+	log.WithField("incident_id", incident.GUID).WithField("total_incidents", len(r.incidents)).Info("Incident created successfully in RAM")
 	return nil
 }
 
 func (r *RAMStorage) GetIncident(id string) (*event.Incident, error) {
+	log := logger.GetDefault().WithComponent("RAMStorage")
+	log.WithField("incident_id", id).Debug("Getting incident from RAM")
+
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
 	incident, exists := r.incidents[id]
 	if !exists {
+		log.WithField("incident_id", id).Debug("Incident not found in RAM")
 		return nil, ErrNotFound
 	}
+
+	log.WithField("incident_id", id).Debug("Incident retrieved successfully")
 	return incident, nil
 }
 

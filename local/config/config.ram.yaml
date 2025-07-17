@@ -6,6 +6,12 @@ auth:
   admin_username: "admin"
   admin_password: "password"
 
+# Logging configuration
+logging:
+  level: "debug"     # Options: "debug", "info", "warn", "error"
+  format: "text"     # Options: "json", "text"
+  no_color: false    # Set to true to disable colored output (for text format)
+
 # Storage configuration
 storage:
   driver: "ram"  # In-memory storage (data lost on restart)

@@ -9,6 +9,12 @@ auth:
   admin_username: "admin"
   admin_password: "password"
 
+# Logging configuration
+logging:
+  level: "info"      # Options: "debug", "info", "warn", "error"
+  format: "json"     # Options: "json", "text"
+  no_color: false    # Set to true to disable colored output (for text format)
+
 # Storage configuration
 storage:
   driver: "s3"  # Options: "ram", "s3"

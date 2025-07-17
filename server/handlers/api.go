@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/gmllt/clariti/logger"
 	"github.com/gmllt/clariti/server/config"
 	"github.com/gmllt/clariti/server/drivers"
 	"github.com/gmllt/clariti/utils"
@@ -43,17 +44,25 @@ func (h *APIHandler) writeError(w http.ResponseWriter, status int, message strin
 
 // Health check endpoint with optimized response
 func (h *APIHandler) HandleHealth(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetDefault().WithComponent("APIHandler")
+	log.Debug("Health check requested")
+
 	healthMap := utils.GetStringMap()
 	healthMap["status"] = "healthy"
 	healthMap["service"] = "clariti-api"
 	defer utils.PutStringMap(healthMap)
 
+	log.Info("Health check completed successfully")
 	h.writeJSON(w, http.StatusOK, healthMap)
 }
 
 // Component info endpoints (read-only) with optimized allocations
 func (h *APIHandler) HandleComponents(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetDefault().WithComponent("APIHandler")
+	log.WithField("method", r.Method).Debug("Components request received")
+
 	if r.Method != http.MethodGet {
+		log.WithField("method", r.Method).Warn("Method not allowed for components endpoint")
 		h.writeError(w, http.StatusMethodNotAllowed, "Only GET method allowed")
 		return
 	}
@@ -64,6 +73,7 @@ func (h *APIHandler) HandleComponents(w http.ResponseWriter, r *http.Request) {
 	response["components"] = h.config.GetAllComponents()
 	defer utils.PutJSONResponse(response)
 
+	log.Info("Components data retrieved successfully")
 	h.writeJSON(w, http.StatusOK, response)
 }
 
@@ -86,12 +96,18 @@ func (h *APIHandler) HandleInstances(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *APIHandler) HandleComponentsList(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetDefault().WithComponent("APIHandler")
+	log.Debug("Components list request received")
+
 	if r.Method != http.MethodGet {
+		log.WithField("method", r.Method).Warn("Method not allowed for components list endpoint")
 		h.writeError(w, http.StatusMethodNotAllowed, "Only GET method allowed")
 		return
 	}
 
-	h.writeJSON(w, http.StatusOK, h.config.GetAllComponents())
+	components := h.config.GetAllComponents()
+	log.WithField("component_count", len(components)).Info("Components list retrieved successfully")
+	h.writeJSON(w, http.StatusOK, components)
 }
 
 // HandleComponentsHierarchy returns the full hierarchical structure

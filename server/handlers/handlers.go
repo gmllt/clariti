@@ -15,13 +15,10 @@ type Handlers struct {
 
 // New creates a new handlers instance with all sub-handlers
 func New(storage drivers.EventStorage, config *config.Config) *Handlers {
-	// Cast to RAMStorage for weather service (we know it's RAMStorage)
-	ramStorage := storage.(*drivers.RAMStorage)
-
 	return &Handlers{
 		API:                NewAPIHandler(storage, config),
 		Incident:           NewIncidentHandler(storage),
 		PlannedMaintenance: NewPlannedMaintenanceHandler(storage),
-		Weather:            NewWeatherHandler(config, ramStorage),
+		Weather:            NewWeatherHandler(config, storage),
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gmllt/clariti/logger"
 	"github.com/gmllt/clariti/models/component"
 	"github.com/gmllt/clariti/models/event"
 	"github.com/gmllt/clariti/server/drivers"
@@ -174,24 +175,33 @@ func (h *PlannedMaintenanceHandler) validatePlannedMaintenance(maintenance *even
 
 // HandlePlannedMaintenances handles /planned-maintenances endpoint
 func (h *PlannedMaintenanceHandler) HandlePlannedMaintenances(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetDefault().WithComponent("PlannedMaintenanceHandler")
+	log.WithField("method", r.Method).WithField("path", r.URL.Path).Debug("Handling planned maintenances request")
+
 	switch r.Method {
 	case http.MethodGet:
 		h.getAllPlannedMaintenances(w, r)
 	case http.MethodPost:
 		h.createPlannedMaintenance(w, r)
 	default:
+		log.WithField("method", r.Method).Warn("Method not allowed for planned maintenances endpoint")
 		h.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
 // HandlePlannedMaintenanceByID handles /planned-maintenances/{id} endpoint
 func (h *PlannedMaintenanceHandler) HandlePlannedMaintenanceByID(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetDefault().WithComponent("PlannedMaintenanceHandler")
+
 	// Extract ID from path parameter
 	id := r.PathValue("id")
 	if id == "" {
+		log.Warn("Missing planned maintenance ID in request path")
 		h.writeError(w, http.StatusBadRequest, "Missing planned maintenance ID")
 		return
 	}
+
+	log.WithField("method", r.Method).WithField("maintenance_id", id).Debug("Handling planned maintenance by ID request")
 
 	switch r.Method {
 	case http.MethodGet:
@@ -201,38 +211,56 @@ func (h *PlannedMaintenanceHandler) HandlePlannedMaintenanceByID(w http.Response
 	case http.MethodDelete:
 		h.deletePlannedMaintenance(w, r, id)
 	default:
+		log.WithField("method", r.Method).WithField("maintenance_id", id).Warn("Method not allowed for planned maintenance by ID endpoint")
 		h.writeError(w, http.StatusMethodNotAllowed, "Method not allowed")
 	}
 }
 
 // getAllPlannedMaintenances returns all planned maintenances
 func (h *PlannedMaintenanceHandler) getAllPlannedMaintenances(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetDefault().WithComponent("PlannedMaintenanceHandler")
+	log.Info("Getting all planned maintenances")
+
 	maintenances, err := h.storage.GetAllPlannedMaintenances()
 	if err != nil {
+		log.WithError(err).Error("Failed to retrieve planned maintenances from storage")
 		h.writeError(w, http.StatusInternalServerError, "Failed to retrieve planned maintenances")
 		return
 	}
+
+	log.WithField("count", len(maintenances)).Info("Retrieved planned maintenances successfully")
 	h.writeJSON(w, http.StatusOK, maintenances)
 }
 
 // getPlannedMaintenance returns a specific planned maintenance
 func (h *PlannedMaintenanceHandler) getPlannedMaintenance(w http.ResponseWriter, r *http.Request, id string) {
+	log := logger.GetDefault().WithComponent("PlannedMaintenanceHandler")
+	log.WithField("maintenance_id", id).Debug("Getting planned maintenance")
+
 	maintenance, err := h.storage.GetPlannedMaintenance(id)
 	if err != nil {
 		if err == drivers.ErrNotFound {
+			log.WithField("maintenance_id", id).Warn("Maintenance not found")
 			h.writeError(w, http.StatusNotFound, "Planned maintenance not found")
 			return
 		}
+		log.WithError(err).WithField("maintenance_id", id).Error("Failed to retrieve maintenance from storage")
 		h.writeError(w, http.StatusInternalServerError, "Failed to retrieve planned maintenance")
 		return
 	}
+
+	log.WithField("maintenance_id", id).Info("Maintenance retrieved successfully")
 	h.writeJSON(w, http.StatusOK, maintenance)
 }
 
 // createPlannedMaintenance creates a new planned maintenance
 func (h *PlannedMaintenanceHandler) createPlannedMaintenance(w http.ResponseWriter, r *http.Request) {
+	log := logger.GetDefault().WithComponent("PlannedMaintenanceHandler")
+	log.Info("Creating new planned maintenance")
+
 	var req PlannedMaintenanceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.WithError(err).Warn("Failed to decode maintenance JSON request")
 		h.writeJSON(w, http.StatusBadRequest, map[string]interface{}{
 			"error":   "Invalid JSON format",
 			"details": err.Error(),
@@ -242,6 +270,7 @@ func (h *PlannedMaintenanceHandler) createPlannedMaintenance(w http.ResponseWrit
 
 	// Validate planned maintenance request data
 	if validationErrors := h.validatePlannedMaintenanceRequest(&req); len(validationErrors) > 0 {
+		log.WithField("validation_errors", validationErrors).Warn("Maintenance validation failed")
 		h.writeJSON(w, http.StatusBadRequest, map[string]interface{}{
 			"error":             "Validation failed",
 			"validation_errors": validationErrors,
@@ -250,20 +279,25 @@ func (h *PlannedMaintenanceHandler) createPlannedMaintenance(w http.ResponseWrit
 	}
 
 	// Convert request to planned maintenance
+	log.Debug("Converting request to planned maintenance")
 	maintenance := req.ToPlannedMaintenance()
 
 	// Ensure GUID is generated if not provided
 	if maintenance.GUID == "" {
+		log.Debug("Generating GUID for new maintenance")
 		// Create new planned maintenance with GUID - use provided times or current time
 		newMaintenance := event.NewPlannedMaintenance(maintenance.Title, maintenance.Content, maintenance.Components, maintenance.StartPlanned, maintenance.EndPlanned)
 		maintenance = newMaintenance
+		log.WithField("maintenance_id", maintenance.GUID).Debug("Generated new maintenance GUID")
 	}
 
 	if err := h.storage.CreatePlannedMaintenance(maintenance); err != nil {
 		if err == drivers.ErrExists {
+			log.WithField("maintenance_id", maintenance.GUID).Warn("Maintenance already exists")
 			h.writeError(w, http.StatusConflict, "Planned maintenance already exists")
 			return
 		}
+		log.WithError(err).WithField("maintenance_id", maintenance.GUID).Error("Failed to create maintenance in storage")
 		h.writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
 			"error":   "Failed to create planned maintenance",
 			"details": err.Error(),
@@ -271,13 +305,19 @@ func (h *PlannedMaintenanceHandler) createPlannedMaintenance(w http.ResponseWrit
 		return
 	}
 
+	log.WithField("maintenance_id", maintenance.GUID).Info("Maintenance created successfully")
+
 	h.writeJSON(w, http.StatusCreated, maintenance)
 }
 
 // updatePlannedMaintenance updates an existing planned maintenance
 func (h *PlannedMaintenanceHandler) updatePlannedMaintenance(w http.ResponseWriter, r *http.Request, id string) {
+	log := logger.GetDefault().WithComponent("PlannedMaintenanceHandler")
+	log.WithField("maintenance_id", id).Info("Updating planned maintenance")
+
 	var req PlannedMaintenanceRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.WithError(err).Warn("Failed to decode maintenance update JSON request")
 		h.writeJSON(w, http.StatusBadRequest, map[string]interface{}{
 			"error":   "Invalid JSON format",
 			"details": err.Error(),
@@ -287,6 +327,7 @@ func (h *PlannedMaintenanceHandler) updatePlannedMaintenance(w http.ResponseWrit
 
 	// Validate planned maintenance request data
 	if validationErrors := h.validatePlannedMaintenanceRequest(&req); len(validationErrors) > 0 {
+		log.WithField("validation_errors", validationErrors).WithField("maintenance_id", id).Warn("Maintenance update validation failed")
 		h.writeJSON(w, http.StatusBadRequest, map[string]interface{}{
 			"error":             "Validation failed",
 			"validation_errors": validationErrors,
@@ -295,6 +336,7 @@ func (h *PlannedMaintenanceHandler) updatePlannedMaintenance(w http.ResponseWrit
 	}
 
 	// Convert request to planned maintenance
+	log.WithField("maintenance_id", id).Debug("Converting update request to planned maintenance")
 	maintenance := req.ToPlannedMaintenance()
 
 	// Ensure the ID in the URL matches the maintenance GUID
@@ -302,9 +344,11 @@ func (h *PlannedMaintenanceHandler) updatePlannedMaintenance(w http.ResponseWrit
 
 	if err := h.storage.UpdatePlannedMaintenance(maintenance); err != nil {
 		if err == drivers.ErrNotFound {
+			log.WithField("maintenance_id", id).Warn("Maintenance not found for update")
 			h.writeError(w, http.StatusNotFound, "Planned maintenance not found")
 			return
 		}
+		log.WithError(err).WithField("maintenance_id", id).Error("Failed to update maintenance in storage")
 		h.writeJSON(w, http.StatusInternalServerError, map[string]interface{}{
 			"error":   "Failed to update planned maintenance",
 			"details": err.Error(),
@@ -312,19 +356,26 @@ func (h *PlannedMaintenanceHandler) updatePlannedMaintenance(w http.ResponseWrit
 		return
 	}
 
+	log.WithField("maintenance_id", id).Info("Maintenance updated successfully")
 	h.writeJSON(w, http.StatusOK, maintenance)
 }
 
 // deletePlannedMaintenance deletes a planned maintenance
 func (h *PlannedMaintenanceHandler) deletePlannedMaintenance(w http.ResponseWriter, r *http.Request, id string) {
+	log := logger.GetDefault().WithComponent("PlannedMaintenanceHandler")
+	log.WithField("maintenance_id", id).Info("Deleting planned maintenance")
+
 	if err := h.storage.DeletePlannedMaintenance(id); err != nil {
 		if err == drivers.ErrNotFound {
+			log.WithField("maintenance_id", id).Warn("Maintenance not found for deletion")
 			h.writeError(w, http.StatusNotFound, "Planned maintenance not found")
 			return
 		}
+		log.WithError(err).WithField("maintenance_id", id).Error("Failed to delete maintenance from storage")
 		h.writeError(w, http.StatusInternalServerError, "Failed to delete planned maintenance")
 		return
 	}
 
+	log.WithField("maintenance_id", id).Info("Maintenance deleted successfully")
 	w.WriteHeader(http.StatusNoContent)
 }

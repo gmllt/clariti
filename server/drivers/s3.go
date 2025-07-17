@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/gmllt/clariti/logger"
 	"github.com/gmllt/clariti/models/event"
 )
 
@@ -34,6 +36,9 @@ type S3Config struct {
 
 // NewS3Storage creates a new S3 storage driver
 func NewS3Storage(cfg S3Config) (*S3Storage, error) {
+	log := logger.GetDefault().WithComponent("S3Storage")
+	log.WithField("bucket", cfg.Bucket).WithField("region", cfg.Region).Info("Initializing S3 storage driver")
+
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -45,30 +50,40 @@ func NewS3Storage(cfg S3Config) (*S3Storage, error) {
 
 	// Set credentials if provided
 	if cfg.AccessKeyID != "" && cfg.SecretAccessKey != "" {
+		log.Debug("Using provided AWS credentials")
 		opts = append(opts, config.WithCredentialsProvider(
 			credentials.NewStaticCredentialsProvider(cfg.AccessKeyID, cfg.SecretAccessKey, ""),
 		))
+	} else {
+		log.Debug("Using default AWS credential chain")
 	}
 
 	awsConfig, err := config.LoadDefaultConfig(ctx, opts...)
 	if err != nil {
+		log.WithError(err).Error("Failed to load AWS config")
 		return nil, fmt.Errorf("failed to load AWS config: %w", err)
 	}
 
 	// Create S3 client
 	s3Client := s3.NewFromConfig(awsConfig, func(o *s3.Options) {
 		if cfg.Endpoint != "" {
+			log.WithField("endpoint", cfg.Endpoint).Debug("Using custom S3 endpoint")
 			o.BaseEndpoint = aws.String(cfg.Endpoint)
+			// For MinIO and other S3-compatible services, use path-style addressing
+			o.UsePathStyle = true
 		}
 	})
 
 	// Test connection by listing objects (with limit 1)
+	log.Debug("Testing S3 connection")
 	_, err = s3Client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket:  aws.String(cfg.Bucket),
 		MaxKeys: aws.Int32(1),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to S3 bucket %s: %w", cfg.Bucket, err)
+		log.WithError(err).WithField("bucket", cfg.Bucket).Warn("Failed to test S3 connection, but continuing anyway")
+		// Don't fail here - the bucket might exist but be empty, or there might be permission issues
+		// We'll catch real issues when we try to use it
 	}
 
 	prefix := cfg.Prefix
@@ -76,6 +91,7 @@ func NewS3Storage(cfg S3Config) (*S3Storage, error) {
 		prefix += "/"
 	}
 
+	log.WithField("prefix", prefix).Info("S3 storage driver initialized successfully")
 	return &S3Storage{
 		client:  s3Client,
 		bucket:  cfg.Bucket,
@@ -90,15 +106,43 @@ func (s *S3Storage) getKey(category, id string) string {
 	return fmt.Sprintf("%s%s/%s.json", s.prefix, category, id)
 }
 
+// createBucketIfNotExists creates the bucket if it doesn't exist
+func (s *S3Storage) createBucketIfNotExists() error {
+	log := logger.GetDefault().WithComponent("S3Storage")
+	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
+	defer cancel()
+
+	log.WithField("bucket", s.bucket).Info("Creating bucket")
+	_, err := s.client.CreateBucket(ctx, &s3.CreateBucketInput{
+		Bucket: aws.String(s.bucket),
+	})
+	if err != nil {
+		// If bucket already exists, that's fine
+		if strings.Contains(err.Error(), "BucketAlreadyExists") || strings.Contains(err.Error(), "BucketAlreadyOwnedByYou") {
+			log.WithField("bucket", s.bucket).Debug("Bucket already exists")
+			return nil
+		}
+		log.WithError(err).WithField("bucket", s.bucket).Error("Failed to create bucket")
+		return err
+	}
+	log.WithField("bucket", s.bucket).Info("Bucket created successfully")
+	return nil
+}
+
 func (s *S3Storage) putObject(key string, data interface{}) error {
+	log := logger.GetDefault().WithComponent("S3Storage")
+	log.WithField("key", key).Debug("Putting object to S3")
+
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
 	jsonData, err := json.Marshal(data)
 	if err != nil {
+		log.WithError(err).WithField("key", key).Error("Failed to marshal data")
 		return fmt.Errorf("failed to marshal data: %w", err)
 	}
 
+	log.WithField("key", key).WithField("size_bytes", len(jsonData)).Debug("Uploading object to S3")
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
@@ -106,13 +150,18 @@ func (s *S3Storage) putObject(key string, data interface{}) error {
 		ContentType: aws.String("application/json"),
 	})
 	if err != nil {
+		log.WithError(err).WithField("key", key).Error("Failed to put object to S3")
 		return fmt.Errorf("failed to put object %s: %w", key, err)
 	}
 
+	log.WithField("key", key).Info("Object uploaded successfully")
 	return nil
 }
 
 func (s *S3Storage) getObject(key string, dest interface{}) error {
+	log := logger.GetDefault().WithComponent("S3Storage")
+	log.WithField("key", key).Debug("Getting object from S3")
+
 	ctx, cancel := context.WithTimeout(context.Background(), s.timeout)
 	defer cancel()
 
@@ -121,18 +170,23 @@ func (s *S3Storage) getObject(key string, dest interface{}) error {
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		// Check if it's a NoSuchKey error
-		if err.Error() == "NoSuchKey" || err.Error() == "NotFound" {
+		// Check if it's a NoSuchKey error (object not found)
+		if strings.Contains(err.Error(), "NoSuchKey") || strings.Contains(err.Error(), "NotFound") {
+			log.WithField("key", key).Debug("Object not found in S3")
 			return ErrNotFound
 		}
+		log.WithError(err).WithField("key", key).Error("Failed to get object from S3")
 		return fmt.Errorf("failed to get object %s: %w", key, err)
 	}
 	defer result.Body.Close()
 
+	log.WithField("key", key).Debug("Decoding object from S3")
 	if err := json.NewDecoder(result.Body).Decode(dest); err != nil {
+		log.WithError(err).WithField("key", key).Error("Failed to decode object")
 		return fmt.Errorf("failed to decode object %s: %w", key, err)
 	}
 
+	log.WithField("key", key).Debug("Object retrieved successfully")
 	return nil
 }
 
@@ -182,16 +236,30 @@ func (s *S3Storage) listObjects(prefix string) ([]string, error) {
 // Incidents implementation
 
 func (s *S3Storage) CreateIncident(incident *event.Incident) error {
+	log := logger.GetDefault().WithComponent("S3Storage")
+	log.WithField("incident_id", incident.GUID).Info("Creating incident in S3")
+
 	// Check if incident already exists
 	key := s.getKey("incidents", incident.GUID)
+	log.WithField("incident_id", incident.GUID).WithField("key", key).Debug("Checking if incident exists")
+
 	var existing event.Incident
 	if err := s.getObject(key, &existing); err == nil {
+		log.WithField("incident_id", incident.GUID).Warn("Incident already exists")
 		return ErrExists
 	} else if err != ErrNotFound {
+		log.WithError(err).WithField("incident_id", incident.GUID).Error("Error checking incident existence")
 		return err
 	}
 
-	return s.putObject(key, incident)
+	log.WithField("incident_id", incident.GUID).Debug("Incident does not exist, proceeding with creation")
+	if err := s.putObject(key, incident); err != nil {
+		log.WithError(err).WithField("incident_id", incident.GUID).Error("Failed to create incident")
+		return err
+	}
+
+	log.WithField("incident_id", incident.GUID).Info("Incident created successfully in S3")
+	return nil
 }
 
 func (s *S3Storage) GetIncident(id string) (*event.Incident, error) {
@@ -204,21 +272,34 @@ func (s *S3Storage) GetIncident(id string) (*event.Incident, error) {
 }
 
 func (s *S3Storage) GetAllIncidents() ([]*event.Incident, error) {
+	log := logger.GetDefault().WithComponent("S3Storage")
+	log.Info("Retrieving all incidents from S3")
+
 	keys, err := s.listObjects("incidents/")
 	if err != nil {
+		log.WithError(err).Error("Failed to list incident objects")
 		return nil, err
 	}
 
+	log.WithField("count", len(keys)).Info("Found incident objects, loading data")
 	var incidents []*event.Incident
+	errorCount := 0
+
 	for _, key := range keys {
 		var incident event.Incident
 		if err := s.getObject(key, &incident); err != nil {
-			// Log error but continue with other incidents
+			log.WithError(err).WithField("key", key).Warn("Failed to load incident, skipping")
+			errorCount++
 			continue
 		}
 		incidents = append(incidents, &incident)
 	}
 
+	if errorCount > 0 {
+		log.WithField("errors", errorCount).WithField("loaded", len(incidents)).Warn("Some incidents failed to load")
+	}
+
+	log.WithField("count", len(incidents)).Info("All incidents retrieved successfully")
 	return incidents, nil
 }
 

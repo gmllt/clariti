@@ -14,7 +14,7 @@ type WeatherHandler struct {
 }
 
 // NewWeatherHandler creates a new weather handler
-func NewWeatherHandler(cfg *config.Config, storage *drivers.RAMStorage) *WeatherHandler {
+func NewWeatherHandler(cfg *config.Config, storage drivers.EventStorage) *WeatherHandler {
 	return &WeatherHandler{
 		weatherService: drivers.NewWeatherService(cfg, storage),
 	}
