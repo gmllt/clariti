@@ -1,0 +1,89 @@
+# GoReleaser configuration for Clariti server
+version: 2
+
+# Project metadata
+project_name: clariti
+
+# Build configuration
+builds:
+  - id: clariti-server
+    main: ./server/main.go
+    binary: clariti-server
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    # Build flags with version information
+    ldflags:
+      - -s -w
+      - -X github.com/prometheus/common/version.Version={{.Version}}
+      - -X github.com/prometheus/common/version.Revision={{.FullCommit}}
+      - -X github.com/prometheus/common/version.Branch={{.Branch}}
+      - -X github.com/prometheus/common/version.BuildUser={{.Env.USER}}
+      - -X github.com/prometheus/common/version.BuildDate={{.Date}}
+
+# Archive configuration
+archives:
+  - id: clariti-archives
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- title .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else if eq .Arch "386" }}i386
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- if .Arm }}v{{ .Arm }}{{ end }}
+    formats:
+      - tar.gz
+      - zip
+    files:
+      - README.md
+      - LICENSE
+      - local/config/config.*.yaml
+
+# Checksum
+checksum:
+  name_template: 'checksums.txt'
+
+# Snapshot configuration for development builds
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+# Changelog configuration
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^ci:"
+      - "Merge pull request"
+      - "Merge branch"
+      - "go mod tidy"
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: 'Bug fixes'
+      regexp: '^.*?bug(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: 'Performance improvements'
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+# Release configuration
+release:
+  github:
+    owner: gmllt
+    name: clariti
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Clariti {{.Tag}} ({{.Date}})
+    
+    Welcome to this new release!

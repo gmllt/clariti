@@ -3,6 +3,8 @@ package v1
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/prometheus/common/version"
 )
 
 // V1APIDoc represents the API v1 documentation structure
@@ -31,7 +33,7 @@ func SetupV1DocumentationRoutes(mux *http.ServeMux) {
 
 		docs := V1APIDoc{
 			Service: "Clariti API",
-			Version: "1.0.0",
+			Version: version.Version,
 			BaseURL: "/api/v1",
 			Endpoints: map[string][]V1Route{
 				"components": {

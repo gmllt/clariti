@@ -3,6 +3,8 @@ package routes
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/prometheus/common/version"
 )
 
 // APIDoc represents the API documentation structure
@@ -30,7 +32,7 @@ func setupDocumentationRoutes(mux *http.ServeMux) {
 
 		docs := APIDoc{
 			Service: "Clariti API",
-			Version: "1.0.0",
+			Version: version.Version,
 			Endpoints: map[string][]Route{
 				"health": {
 					{
