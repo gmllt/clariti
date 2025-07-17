@@ -42,6 +42,9 @@ func setupAPIIndexRoutes(mux *http.ServeMux) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(index)
+		if err := json.NewEncoder(w).Encode(index); err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	})
 }

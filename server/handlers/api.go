@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
-	"strings"
 
 	"github.com/gmllt/clariti/server/config"
 	"github.com/gmllt/clariti/server/drivers"
@@ -35,14 +34,6 @@ func (h *APIHandler) writeJSON(w http.ResponseWriter, status int, data interface
 // writeError writes an error response
 func (h *APIHandler) writeError(w http.ResponseWriter, status int, message string) {
 	h.writeJSON(w, status, map[string]string{"error": message})
-}
-
-// extractID extracts the ID from the URL path
-func extractID(path, prefix string) string {
-	if strings.HasPrefix(path, prefix) {
-		return strings.TrimPrefix(path, prefix)
-	}
-	return ""
 }
 
 // Health check endpoint

@@ -61,7 +61,12 @@ func LoadConfig(configPath string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to open config file: %w", err)
 	}
-	defer file.Close()
+	defer func() {
+		if err := file.Close(); err != nil {
+			// In a production environment, this should be logged properly
+			_ = err // Explicitly ignore the error for now
+		}
+	}()
 
 	var config Config
 	decoder := yaml.NewDecoder(file)

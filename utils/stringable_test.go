@@ -169,7 +169,7 @@ func TestStringableInterface(t *testing.T) {
 	component := NewMockComponent("Test Component", "test-comp", instance)
 
 	// Test that all types implement Stringable
-	var stringables []Stringable = []Stringable{platform, instance, component}
+	stringables := []Stringable{platform, instance, component}
 
 	for i, s := range stringables {
 		if s.String() == "" {
@@ -184,7 +184,7 @@ func TestNormalizableInterface(t *testing.T) {
 	component := NewMockComponent("Test Component", "test-comp", instance)
 
 	// Test that all types implement Normalizable
-	var normalizables []Normalizable = []Normalizable{platform, instance, component}
+	normalizables := []Normalizable{platform, instance, component}
 
 	for i, n := range normalizables {
 		if n.Normalize() == "" {

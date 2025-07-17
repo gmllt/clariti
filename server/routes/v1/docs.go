@@ -106,6 +106,9 @@ func SetupV1DocumentationRoutes(mux *http.ServeMux) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(docs)
+		if err := json.NewEncoder(w).Encode(docs); err != nil {
+			http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+			return
+		}
 	})
 }

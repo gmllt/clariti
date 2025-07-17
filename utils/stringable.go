@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"regexp"
 	"strings"
 )
 
@@ -15,11 +14,6 @@ type Normalizable interface {
 	Stringable
 	Normalize() string
 }
-
-var (
-	// nonAlphanumericRegex matches any sequence of non-alphanumeric characters
-	nonAlphanumericRegex = regexp.MustCompile(`[^a-z0-9]+`)
-)
 
 // normalizeString converts a string to a normalized form suitable for identifiers
 func normalizeString(input string) string {

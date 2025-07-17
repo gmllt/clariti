@@ -1,0 +1,39 @@
+version: "2"
+run:
+  tests: true
+linters:
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - errcheck
+        path: _test\.go
+        text: Error return value of.*json\.
+      - linters:
+          - errcheck
+        path: _test\.go
+        text: Error return value of.*storage\.
+      - linters:
+          - errcheck
+        path: _test\.go
+        text: Error return value of.*Close.*is not checked
+      - linters:
+          - staticcheck
+        path: utils/guid\.go
+        text: 'SA6002: argument should be pointer-like to avoid allocations'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

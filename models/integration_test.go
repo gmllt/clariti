@@ -151,7 +151,7 @@ func TestComponentInterface(t *testing.T) {
 	comp := component.NewComponent("Test Component", "test-component", instance)
 
 	// Test Stringable interface
-	var stringables []utils.Stringable = []utils.Stringable{
+	stringables := []utils.Stringable{
 		platform, instance, comp,
 	}
 
@@ -162,7 +162,7 @@ func TestComponentInterface(t *testing.T) {
 	}
 
 	// Test Normalizable interface
-	var normalizables []utils.Normalizable = []utils.Normalizable{
+	normalizables := []utils.Normalizable{
 		platform, instance, comp,
 	}
 
@@ -210,7 +210,7 @@ func TestEventInterface(t *testing.T) {
 	}
 
 	// Test Event interface compliance
-	var events []event.Event = []event.Event{incident, maintenance}
+	events := []event.Event{incident, maintenance}
 
 	for i, e := range events {
 		// All events should have a type
