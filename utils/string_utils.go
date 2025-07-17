@@ -23,12 +23,12 @@ func (stringUtils) BuildHierarchicalString(parent, child string) string {
 		return parent
 	}
 
-	var builder strings.Builder
-	builder.Grow(len(parent) + 3 + len(child)) // " - " is 3 chars
-	builder.WriteString(parent)
-	builder.WriteString(" - ")
-	builder.WriteString(child)
-	return builder.String()
+	return WithBuilderCapacity(len(parent)+3+len(child), func(builder *strings.Builder) string {
+		builder.WriteString(parent)
+		builder.WriteString(" - ")
+		builder.WriteString(child)
+		return builder.String()
+	})
 }
 
 // BuildNormalizedPath creates a normalized path like "parent-child"
@@ -40,12 +40,12 @@ func (stringUtils) BuildNormalizedPath(parent, child string) string {
 		return parent
 	}
 
-	var builder strings.Builder
-	builder.Grow(len(parent) + 1 + len(child))
-	builder.WriteString(parent)
-	builder.WriteByte('-')
-	builder.WriteString(normalizeString(child))
-	return builder.String()
+	return WithBuilderCapacity(len(parent)+1+len(child), func(builder *strings.Builder) string {
+		builder.WriteString(parent)
+		builder.WriteByte('-')
+		builder.WriteString(normalizeString(child))
+		return builder.String()
+	})
 }
 
 // NormalizeWithFallback normalizes a code if not empty, otherwise normalizes the full string

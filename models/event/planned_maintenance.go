@@ -2,6 +2,8 @@ package event
 
 import (
 	"time"
+
+	"github.com/gmllt/clariti/models/component"
 )
 
 // PlannedMaintenance represents a scheduled maintenance event
@@ -37,4 +39,22 @@ func (pm *PlannedMaintenance) Status() Status {
 // Criticality returns the criticality level for maintenance events
 func (pm *PlannedMaintenance) Criticality() Criticality {
 	return CriticalityUnderMaintenance
+}
+
+// NewPlannedMaintenance creates a new planned maintenance with automatically generated GUID
+func NewPlannedMaintenance(title, content string, components []*component.Component, startPlanned, endPlanned time.Time) *PlannedMaintenance {
+	return &PlannedMaintenance{
+		BaseEvent:    NewBaseEvent(title, content, components),
+		StartPlanned: startPlanned,
+		EndPlanned:   endPlanned,
+		Cancelled:    false,
+	}
+}
+
+// NewPlannedMaintenanceWithTimes creates a planned maintenance with both planned and effective times
+func NewPlannedMaintenanceWithTimes(title, content string, components []*component.Component, startPlanned, endPlanned time.Time, startEffective, endEffective *time.Time) *PlannedMaintenance {
+	pm := NewPlannedMaintenance(title, content, components, startPlanned, endPlanned)
+	pm.StartEffective = startEffective
+	pm.EndEffective = endEffective
+	return pm
 }

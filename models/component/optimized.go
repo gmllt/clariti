@@ -1,6 +1,8 @@
 package component
 
 import (
+	"strings"
+
 	"github.com/gmllt/clariti/utils"
 )
 
@@ -14,15 +16,13 @@ type OptimizedComponent struct {
 func (c *OptimizedComponent) NormalizePooled() string {
 	if c.Code != "" {
 		if c.Instance != nil {
-			builder := utils.GetBuilder()
-			defer utils.PutBuilder(builder)
-
 			instanceNorm := c.Instance.Normalize()
-			builder.Grow(len(instanceNorm) + 1 + len(c.Code))
-			builder.WriteString(instanceNorm)
-			builder.WriteByte('-')
-			builder.WriteString(utils.NormalizeStringPooled(c.Code))
-			return builder.String()
+			return utils.WithBuilderCapacity(len(instanceNorm)+1+len(c.Code), func(builder *strings.Builder) string {
+				builder.WriteString(instanceNorm)
+				builder.WriteByte('-')
+				builder.WriteString(utils.NormalizeStringPooled(c.Code))
+				return builder.String()
+			})
 		}
 		return utils.NormalizeStringPooled(c.Code)
 	}
@@ -36,15 +36,13 @@ func (c *OptimizedComponent) NormalizePooled() string {
 // String for OptimizedComponent
 func (c *OptimizedComponent) String() string {
 	if c.Instance != nil {
-		builder := utils.GetBuilder()
-		defer utils.PutBuilder(builder)
-
 		instanceStr := c.Instance.String()
-		builder.Grow(len(instanceStr) + 3 + len(c.Name)) // " - " is 3 chars
-		builder.WriteString(instanceStr)
-		builder.WriteString(" - ")
-		builder.WriteString(c.Name)
-		return builder.String()
+		return utils.WithBuilderCapacity(len(instanceStr)+3+len(c.Name), func(builder *strings.Builder) string {
+			builder.WriteString(instanceStr)
+			builder.WriteString(" - ")
+			builder.WriteString(c.Name)
+			return builder.String()
+		})
 	}
 	return c.Name
 }

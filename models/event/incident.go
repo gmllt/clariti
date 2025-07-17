@@ -2,6 +2,8 @@ package event
 
 import (
 	"time"
+
+	"github.com/gmllt/clariti/models/component"
 )
 
 // Incident represents a service incident or known issue
@@ -33,4 +35,23 @@ func (i *Incident) Status() Status {
 // Criticality returns the incident criticality level
 func (i *Incident) Criticality() Criticality {
 	return i.IncidentCriticality
+}
+
+// NewIncident creates a new incident with automatically generated GUID
+func NewIncident(title, content string, components []*component.Component, criticality Criticality, perpetual bool) *Incident {
+	return &Incident{
+		BaseEvent:           NewBaseEvent(title, content, components),
+		Perpetual:           perpetual,
+		IncidentCriticality: criticality,
+	}
+}
+
+// NewFiringIncident creates a new firing incident (non-perpetual)
+func NewFiringIncident(title, content string, components []*component.Component, criticality Criticality) *Incident {
+	return NewIncident(title, content, components, criticality, false)
+}
+
+// NewKnownIssue creates a new known issue (perpetual incident)
+func NewKnownIssue(title, content string, components []*component.Component, criticality Criticality) *Incident {
+	return NewIncident(title, content, components, criticality, true)
 }

@@ -458,6 +458,95 @@ func TestIncident_ComponentStatusCorrelation(t *testing.T) {
 	}
 }
 
+func TestNewIncident_GUIDGeneration(t *testing.T) {
+	platform := component.NewPlatform("Test Platform", "test")
+	instance := component.NewInstance("Test Instance", "test-inst", platform)
+	comp := component.NewComponent("Test Component", "test-comp", instance)
+
+	incident := NewIncident("Test Incident", "Test content", []*component.Component{comp}, CriticalityMajorOutage, false)
+
+	if incident.GUID == "" {
+		t.Error("NewIncident should generate a non-empty GUID")
+	}
+
+	if len(incident.GUID) != 36 {
+		t.Errorf("GUID should be 36 characters long, got %d", len(incident.GUID))
+	}
+}
+
+func TestNewFiringIncident_GUIDGeneration(t *testing.T) {
+	incident := NewFiringIncident("Test Firing", "Test content", nil, CriticalityMajorOutage)
+
+	if incident.GUID == "" {
+		t.Error("NewFiringIncident should generate a non-empty GUID")
+	}
+
+	if incident.Perpetual {
+		t.Error("NewFiringIncident should create non-perpetual incident")
+	}
+}
+
+func TestNewKnownIssue_GUIDGeneration(t *testing.T) {
+	issue := NewKnownIssue("Known Issue", "Test content", nil, CriticalityDegraded)
+
+	if issue.GUID == "" {
+		t.Error("NewKnownIssue should generate a non-empty GUID")
+	}
+
+	if !issue.Perpetual {
+		t.Error("NewKnownIssue should create perpetual incident")
+	}
+}
+
+func TestGUIDUniqueness_Incidents(t *testing.T) {
+	incidents := make([]*Incident, 100)
+	guids := make(map[string]bool)
+
+	for i := 0; i < 100; i++ {
+		incidents[i] = NewFiringIncident("Test", "Content", nil, CriticalityOperational)
+
+		if guids[incidents[i].GUID] {
+			t.Errorf("Duplicate GUID generated: %s", incidents[i].GUID)
+		}
+		guids[incidents[i].GUID] = true
+	}
+}
+
+// Benchmark tests for GUID generation performance
+func BenchmarkNewIncident(b *testing.B) {
+	platform := component.NewPlatform("Bench Platform", "bench")
+	instance := component.NewInstance("Bench Instance", "bench-inst", platform)
+	comp := component.NewComponent("Bench Component", "bench-comp", instance)
+	components := []*component.Component{comp}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewIncident("Benchmark Incident", "Test content", components, CriticalityMajorOutage, false)
+	}
+}
+
+func BenchmarkNewFiringIncident(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewFiringIncident("Benchmark Firing", "Test content", nil, CriticalityMajorOutage)
+	}
+}
+
+func BenchmarkNewKnownIssue(b *testing.B) {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewKnownIssue("Benchmark Known Issue", "Test content", nil, CriticalityDegraded)
+	}
+}
+
+func BenchmarkIncidentCreation_Concurrent(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = NewFiringIncident("Concurrent Incident", "Test content", nil, CriticalityMajorOutage)
+		}
+	})
+}
+
 // Helper function for string contains check
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && (s == substr || (len(s) > len(substr) &&

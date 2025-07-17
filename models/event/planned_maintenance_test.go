@@ -574,3 +574,105 @@ func TestPlannedMaintenance_ComponentSchedulingCorrelation(t *testing.T) {
 		})
 	}
 }
+
+func TestNewPlannedMaintenance_GUIDGeneration(t *testing.T) {
+	now := time.Now()
+	startPlanned := now.Add(1 * time.Hour)
+	endPlanned := now.Add(3 * time.Hour)
+
+	platform := component.NewPlatform("Test Platform", "test")
+	instance := component.NewInstance("Test Instance", "test-inst", platform)
+	comp := component.NewComponent("Test Component", "test-comp", instance)
+
+	pm := NewPlannedMaintenance("Test Maintenance", "Test content", []*component.Component{comp}, startPlanned, endPlanned)
+
+	if pm.GUID == "" {
+		t.Error("NewPlannedMaintenance should generate a non-empty GUID")
+	}
+
+	if len(pm.GUID) != 36 {
+		t.Errorf("GUID should be 36 characters long, got %d", len(pm.GUID))
+	}
+
+	if pm.Cancelled {
+		t.Error("NewPlannedMaintenance should not be cancelled by default")
+	}
+}
+
+func TestNewPlannedMaintenanceWithTimes_GUIDGeneration(t *testing.T) {
+	now := time.Now()
+	startPlanned := now.Add(1 * time.Hour)
+	endPlanned := now.Add(3 * time.Hour)
+	startEffective := now.Add(2 * time.Hour)
+	endEffective := now.Add(4 * time.Hour)
+
+	pm := NewPlannedMaintenanceWithTimes("Test", "Content", nil, startPlanned, endPlanned, &startEffective, &endEffective)
+
+	if pm.GUID == "" {
+		t.Error("NewPlannedMaintenanceWithTimes should generate a non-empty GUID")
+	}
+
+	if pm.StartEffective == nil || pm.EndEffective == nil {
+		t.Error("NewPlannedMaintenanceWithTimes should set effective times")
+	}
+}
+
+func TestGUIDUniqueness_PlannedMaintenance(t *testing.T) {
+	now := time.Now()
+	startPlanned := now.Add(1 * time.Hour)
+	endPlanned := now.Add(3 * time.Hour)
+
+	maintenances := make([]*PlannedMaintenance, 100)
+	guids := make(map[string]bool)
+
+	for i := 0; i < 100; i++ {
+		maintenances[i] = NewPlannedMaintenance("Test", "Content", nil, startPlanned, endPlanned)
+
+		if guids[maintenances[i].GUID] {
+			t.Errorf("Duplicate GUID generated: %s", maintenances[i].GUID)
+		}
+		guids[maintenances[i].GUID] = true
+	}
+}
+
+// Benchmark tests for GUID generation performance
+func BenchmarkNewPlannedMaintenance(b *testing.B) {
+	now := time.Now()
+	startPlanned := now.Add(1 * time.Hour)
+	endPlanned := now.Add(3 * time.Hour)
+
+	platform := component.NewPlatform("Bench Platform", "bench")
+	instance := component.NewInstance("Bench Instance", "bench-inst", platform)
+	comp := component.NewComponent("Bench Component", "bench-comp", instance)
+	components := []*component.Component{comp}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewPlannedMaintenance("Benchmark Maintenance", "Test content", components, startPlanned, endPlanned)
+	}
+}
+
+func BenchmarkNewPlannedMaintenanceWithTimes(b *testing.B) {
+	now := time.Now()
+	startPlanned := now.Add(1 * time.Hour)
+	endPlanned := now.Add(3 * time.Hour)
+	startEffective := now.Add(2 * time.Hour)
+	endEffective := now.Add(4 * time.Hour)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		_ = NewPlannedMaintenanceWithTimes("Benchmark", "Content", nil, startPlanned, endPlanned, &startEffective, &endEffective)
+	}
+}
+
+func BenchmarkPlannedMaintenanceCreation_Concurrent(b *testing.B) {
+	now := time.Now()
+	startPlanned := now.Add(1 * time.Hour)
+	endPlanned := now.Add(3 * time.Hour)
+
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			_ = NewPlannedMaintenance("Concurrent Maintenance", "Test content", nil, startPlanned, endPlanned)
+		}
+	})
+}

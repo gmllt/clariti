@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/gmllt/clariti/models/component"
+	"github.com/gmllt/clariti/utils"
 )
 
 // TypeEvent represents the type of an event
@@ -73,4 +74,17 @@ type BaseEvent struct {
 	Components     []*component.Component `json:"components,omitempty"`
 	StartEffective *time.Time             `json:"start_effective"`
 	EndEffective   *time.Time             `json:"end_effective"`
+}
+
+// NewBaseEvent creates a new BaseEvent with automatically generated GUID
+func NewBaseEvent(title, content string, components []*component.Component) BaseEvent {
+	return BaseEvent{
+		GUID:           utils.NewGUIDString(),
+		Title:          title,
+		Content:        content,
+		ExtraFields:    make(map[string]string),
+		Components:     components,
+		StartEffective: nil,
+		EndEffective:   nil,
+	}
 }
