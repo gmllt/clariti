@@ -20,17 +20,23 @@ local/
    ./local/dev/lint.sh
    ```
 
-2. **Run performance benchmarks:**
+2. **Manage dependencies:**
+   ```bash
+   ./local/dev/vendor.sh status
+   ./local/dev/vendor.sh update
+   ```
+
+3. **Run performance benchmarks:**
    ```bash
    ./local/benchmarks/benchmark.sh
    ```
 
-3. **Generate performance baseline:**
+4. **Generate performance baseline:**
    ```bash
    ./local/benchmarks/analyze.sh --baseline
    ```
 
-4. **View all available tools:**
+5. **View all available tools:**
    ```bash
    ./local/dev/tools.sh
    ```
@@ -40,6 +46,7 @@ local/
 | Script | Purpose |
 |--------|---------|
 | `lint.sh` | Run golangci-lint for code quality checks |
+| `vendor.sh` | Manage Go module vendoring and dependencies |
 | `tools.sh` | Display all available development tools |
 
 ## Benchmark Tools (`benchmarks/`)
@@ -99,10 +106,32 @@ The `analyze.sh` script provides advanced performance analysis:
 ## Development Workflow
 
 1. **Make changes** to your Go code
-2. **Check quality:** `./local/dev/lint.sh`
-3. **Test functionality:** `go test ./...`
-4. **Verify performance:** `./local/benchmarks/benchmark.sh`
-5. **Commit changes:** `git commit`
+2. **Check dependencies:** `./local/dev/vendor.sh verify`
+3. **Check quality:** `./local/dev/lint.sh`
+4. **Test functionality:** `go test ./...`
+5. **Verify performance:** `./local/benchmarks/benchmark.sh`
+6. **Commit changes:** `git commit`
+
+## Dependency Management
+
+The project uses Go module vendoring for reproducible builds:
+
+```bash
+# Check vendor status
+./local/dev/vendor.sh status
+
+# Update all dependencies
+./local/dev/vendor.sh update
+
+# Verify vendor integrity
+./local/dev/vendor.sh verify
+
+# Build with vendored dependencies
+./local/dev/vendor.sh build
+
+# Test with vendored dependencies
+./local/dev/vendor.sh test
+```
 
 ## Performance Baselines
 
