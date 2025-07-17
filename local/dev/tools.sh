@@ -4,94 +4,83 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 LOCAL_DIR="$(dirname "$SCRIPT_DIR")"
 
-echo "[TOOLS] Clariti Development Tools"
-echo "============================"
-echo ""
+# Source shared logging library
+source "$SCRIPT_DIR/log.sh"
 
-echo "[SCRIPTS] Available Scripts:"
-echo "-------------------"
-echo "[TEST] ./local/dev/test.sh           - Run all tests with coverage (if exists)"
-echo "[LINT] ./local/dev/lint.sh           - Run golangci-lint code quality checks"
-echo "[VENDOR] ./local/dev/vendor.sh         - Manage Go module vendoring"
-echo "[BENCHMARK] ./local/benchmarks/benchmark.sh - Run configurable performance benchmarks"
-echo "[ANALYZE] ./local/benchmarks/analyze.sh - Advanced benchmark analysis & comparison"
-echo "[HELP] ./local/dev/tools.sh          - Show this help menu"
-echo ""
+log_header "Clariti Development Tools"
 
-echo "[HTTPS] HTTPS & Security:"
-echo "-------------------"
-echo "[CERTS] ./local/certs/generate-certs.sh - Generate development certificates"
-echo "[TEST] ./local/certs/test-https.sh     - Test HTTPS functionality"
-echo ""
+log_section "Available Scripts"
+log_list "Development Tools" \
+    "TEST: ./local/dev/test.sh - Run all tests with coverage (if exists)" \
+    "LINT: ./local/dev/lint.sh - Run golangci-lint code quality checks" \
+    "VENDOR: ./local/dev/vendor.sh - Manage Go module vendoring" \
+    "BENCHMARK: ./local/benchmarks/benchmark.sh - Run configurable performance benchmarks" \
+    "ANALYZE: ./local/benchmarks/analyze.sh - Advanced benchmark analysis & comparison" \
+    "HELP: ./local/dev/tools.sh - Show this help menu"
 
-echo "[CONFIG] Configuration Examples:"
-echo "-------------------------"
-echo "[BASIC] ./local/config/config.example.yaml - Basic configuration template"
-echo "[HTTPS] ./local/config/config.https.yaml    - HTTPS configuration example"
-echo ""
+log_section "HTTPS & Security"
+log_list "Security Tools" \
+    "CERTS: ./local/certs/generate-certs.sh - Generate development certificates" \
+    "TEST: ./local/certs/test-https.sh - Test HTTPS functionality"
 
-echo "[COMMANDS] Quick Commands:"
-echo "----------------"
-echo "# Run quality checks:"
-echo "./local/dev/lint.sh"
-echo ""
-echo "# Manage dependencies:"
-echo "./local/dev/vendor.sh status"
-echo "./local/dev/vendor.sh update"
-echo "./local/dev/vendor.sh build"
-echo ""
-echo "# Run benchmarks with options:"
-echo "./local/benchmarks/benchmark.sh --help"
-echo "./local/benchmarks/analyze.sh --baseline"
-echo "./local/benchmarks/analyze.sh --compare"
-echo ""
+log_section "Configuration Examples"
+log_list "Config Templates" \
+    "BASIC: ./local/config/config.example.yaml - Basic configuration template" \
+    "HTTPS: ./local/config/config.https.yaml - HTTPS configuration example"
 
-echo "[WORKFLOW] Development Workflow:"
-echo "----------------------"
-echo "1. Code changes                      - Edit your Go files"
-echo "2. ./local/dev/vendor.sh verify     - Check dependencies"
-echo "3. ./local/dev/lint.sh               - Check code quality"
-echo "4. go test ./...                     - Verify functionality"
-echo "5. ./local/benchmarks/benchmark.sh   - Check performance"
-echo "6. git commit                        - Commit your changes"
-echo ""
+log_section "Quick Commands"
+log_info "Run quality checks:"
+echo "  ./local/dev/lint.sh"
 
-echo "[VENDOR] Vendor Commands:"
-echo "-----------------"
-echo "# Check vendor status:"
-echo "./local/dev/vendor.sh status"
-echo ""
-echo "# Update dependencies:"
-echo "./local/dev/vendor.sh update"
-echo ""
-echo "# Build with vendor:"
-echo "./local/dev/vendor.sh build"
-echo ""
-echo "# Verify vendor integrity:"
-echo "./local/dev/vendor.sh verify"
-echo ""
+log_info "Manage dependencies:"
+echo "  ./local/dev/vendor.sh status"
+echo "  ./local/dev/vendor.sh update"
+echo "  ./local/dev/vendor.sh build"
 
-echo "[BENCHMARK] Benchmark Commands:"
-echo "--------------------"
-echo "# Generate performance baseline:"
-echo "./local/benchmarks/analyze.sh --baseline"
-echo ""
-echo "# Run benchmarks with custom timeout:"
-echo "./local/benchmarks/benchmark.sh --timeout 2m"
-echo ""
-echo "# Compare current performance:"
-echo "./local/benchmarks/analyze.sh --compare"
-echo ""
+log_info "Run benchmarks with options:"
+echo "  ./local/benchmarks/benchmark.sh --help"
+echo "  ./local/benchmarks/analyze.sh --baseline"
+echo "  ./local/benchmarks/analyze.sh --compare"
 
-echo "[STRUCTURE] Directory Structure:"
-echo "----------------------"
+log_section "Development Workflow"
+log_list "Step by Step" \
+    "1. Code changes - Edit your Go files" \
+    "2. ./local/dev/vendor.sh verify - Check dependencies" \
+    "3. ./local/dev/lint.sh - Check code quality" \
+    "4. go test ./... - Verify functionality" \
+    "5. ./local/benchmarks/benchmark.sh - Check performance" \
+    "6. git commit - Commit your changes"
+
+log_section "Vendor Commands"
+log_info "Check vendor status:"
+echo "  ./local/dev/vendor.sh status"
+
+log_info "Update dependencies:"
+echo "  ./local/dev/vendor.sh update"
+
+log_info "Build with vendor:"
+echo "  ./local/dev/vendor.sh build"
+
+log_info "Verify vendor integrity:"
+echo "  ./local/dev/vendor.sh verify"
+
+log_section "Benchmark Commands"
+log_info "Generate performance baseline:"
+echo "  ./local/benchmarks/analyze.sh --baseline"
+
+log_info "Run benchmarks with custom timeout:"
+echo "  ./local/benchmarks/benchmark.sh --timeout 2m"
+
+log_info "Compare current performance:"
+echo "  ./local/benchmarks/analyze.sh --compare"
+
+log_section "Directory Structure"
 echo "local/"
 echo "├── dev/           # Development tools (lint, test scripts)"
 echo "├── benchmarks/    # Performance testing tools and results"
 echo "├── config/        # Configuration examples"
 echo "├── certs/         # HTTPS certificates and tools"
 echo "└── README.md      # Documentation"
-echo ""
 
-echo "[INFO] All tools are ready to use!"
-echo "[HELP] Most scripts support --help for detailed options"
+log_success "All tools are ready to use!"
+log_info "Most scripts support --help for detailed options"

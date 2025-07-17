@@ -48,6 +48,45 @@ local/
 | `lint.sh` | Run golangci-lint for code quality checks |
 | `vendor.sh` | Manage Go module vendoring and dependencies |
 | `tools.sh` | Display all available development tools |
+| `log.sh` | Shared logging library for all scripts |
+
+### Shared Logging Library
+
+The `log.sh` file provides consistent colored logging functions for all development scripts. All scripts in this directory use this shared library for standardized output.
+
+**Basic Functions:**
+- `log_info "message"` - Informational messages (blue)
+- `log_success "message"` - Success messages (green)
+- `log_warn "message"` - Warning messages (yellow)
+- `log_error "message"` - Error messages (red)
+- `log_debug "message"` - Debug messages (gray, DEBUG mode only)
+
+**Specialized Functions:**
+- `log_vendor "message"` - Vendor operations
+- `log_build "message"` - Build operations
+- `log_test "message"` - Test operations
+- `log_benchmark "message"` - Benchmark operations
+- `log_lint "message"` - Linting operations
+
+**Utility Functions:**
+- `log_header "title"` - Section headers with separators
+- `log_section "title"` - Section titles
+- `log_config_summary "title" "key1" "value1" "key2" "value2"` - Configuration displays
+- `log_list "title" "item1" "item2"` - Formatted lists
+- `log_progress 3 10 "task"` - Progress indicators
+
+**Usage in Scripts:**
+```bash
+#!/bin/bash
+source "$(dirname "$0")/log.sh"
+log_info "Script started"
+```
+
+**Debug Mode:**
+Set `DEBUG=true` to enable debug messages:
+```bash
+DEBUG=true ./script.sh
+```
 
 ## Benchmark Tools (`benchmarks/`)
 
