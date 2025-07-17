@@ -43,6 +43,39 @@ builds:
       - -X github.com/prometheus/common/version.Branch={{.Branch}}
       - -X github.com/prometheus/common/version.BuildUser={{.Env.USER}}
       - -X github.com/prometheus/common/version.BuildDate={{.Date}}
+      
+  - id: clariti-cli
+    main: ./cli/main.go
+    binary: clariti-cli
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+      - freebsd
+    goarch:
+      - amd64
+      - arm64
+      - 386
+      - arm
+    goarm:
+      - 6
+      - 7
+    ignore:
+      # Skip 32-bit builds for macOS (not supported)
+      - goos: darwin
+        goarch: 386
+      - goos: darwin
+        goarch: arm
+      # Skip ARM builds for Windows (rarely used)
+      - goos: windows
+        goarch: arm
+      - goos: windows
+        goarch: arm64
+    # Build flags with version information
+    ldflags:
+      - -s -w
 
 # Archive configuration
 archives:

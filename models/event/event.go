@@ -1,6 +1,7 @@
 package event
 
 import (
+	"strings"
 	"time"
 
 	"github.com/gmllt/clariti/models/component"
@@ -55,6 +56,24 @@ func (c Criticality) String() string {
 		return "under maintenance"
 	default:
 		return "unknown"
+	}
+}
+
+// ParseCriticality parses a string to Criticality enum
+func ParseCriticality(s string) Criticality {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "operational":
+		return CriticalityOperational
+	case "degraded":
+		return CriticalityDegraded
+	case "partial outage", "partial_outage":
+		return CriticalityPartialOutage
+	case "major outage", "major_outage":
+		return CriticalityMajorOutage
+	case "under maintenance", "under_maintenance", "maintenance":
+		return CriticalityUnderMaintenance
+	default:
+		return CriticalityUnknown
 	}
 }
 

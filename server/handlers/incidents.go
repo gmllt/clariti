@@ -29,22 +29,11 @@ type IncidentRequest struct {
 
 // parseCriticality converts string criticality to event.Criticality
 func parseCriticality(criticalityStr string) (event.Criticality, error) {
-	switch strings.ToLower(strings.TrimSpace(criticalityStr)) {
-	case "operational":
-		return event.CriticalityOperational, nil
-	case "degraded":
-		return event.CriticalityDegraded, nil
-	case "partial outage", "partial_outage":
-		return event.CriticalityPartialOutage, nil
-	case "major outage", "major_outage":
-		return event.CriticalityMajorOutage, nil
-	case "under maintenance", "under_maintenance", "maintenance":
-		return event.CriticalityUnderMaintenance, nil
-	case "unknown", "":
-		return event.CriticalityUnknown, nil
-	default:
+	criticality := event.ParseCriticality(criticalityStr)
+	if criticality == event.CriticalityUnknown && criticalityStr != "" && criticalityStr != "unknown" {
 		return event.CriticalityUnknown, fmt.Errorf("invalid criticality '%s'. Valid values: operational, degraded, partial outage, major outage, under maintenance, unknown", criticalityStr)
 	}
+	return criticality, nil
 }
 
 // ToIncident converts IncidentRequest to event.Incident by resolving component codes

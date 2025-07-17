@@ -11,6 +11,7 @@ Clariti helps you manage service status pages and track system health:
 - **Maintenance Planning** - Schedule and track planned maintenance windows
 - **Monitoring Integration** - Built-in Prometheus metrics for system health
 - **REST API** - Complete API for status page integration
+- **Command Line Interface** - Full CLI tool for remote management
 - **Multiple Storage** - Use RAM for testing or S3/MinIO for production
 - **Authentication** - Secure admin operations with basic auth
 
@@ -59,6 +60,23 @@ curl http://localhost:8080/api/v1/weather
 curl http://localhost:8080/metrics
 ```
 
+### Using the CLI
+
+```bash
+# Build both server and CLI
+goreleaser build --snapshot --clean --single-target
+
+# Set up environment
+export CLARITI_SERVER_URL="http://localhost:8080"
+export CLARITI_USERNAME="admin"
+export CLARITI_PASSWORD="password"
+
+# CLI commands
+./dist/clariti-cli_linux_amd64_v1/clariti-cli health
+./dist/clariti-cli_linux_amd64_v1/clariti-cli weather --output json
+./dist/clariti-cli_linux_amd64_v1/clariti-cli incident list
+```
+
 ## Project Structure
 
 ```
@@ -72,6 +90,9 @@ clariti/
 │   ├── drivers/         # Storage backend drivers
 │   ├── metrics/         # Prometheus metrics setup
 │   └── config/          # Configuration loading
+├── cli/                 # Command line interface
+│   ├── main.go          # CLI entry point
+│   └── cmd/             # CLI commands and client
 ├── models/              # Data models and structures
 │   ├── event/           # Incident and maintenance models
 │   └── component/       # Component hierarchy models
@@ -223,6 +244,7 @@ goreleaser release --snapshot --clean --skip=publish
 
 ## Documentation
 
+- **[Command Line Interface](cli/README.md)** - CLI tool for remote management
 - **[Storage Drivers Guide](STORAGE_DRIVERS.md)** - How to configure different storage backends
 - **[Local Development](local/README.md)** - Development and testing guide
 

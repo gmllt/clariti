@@ -68,4 +68,5 @@ coverage.out
 build/
 dist/
 clariti-server
+clariti-cli
 clariti
