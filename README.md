@@ -1,142 +1,251 @@
 # Clariti
 
-REST API for incident and planned maintenance management with hierarchical component structure.
+**Service Status Management System** - Track incidents and maintenance with monitoring support.
 
-## ✨ Features
+## What is Clariti
 
-- 🏗️ **Modular architecture** with hierarchical structure (Platform → Instance → Component)
-- 🔐 **Basic Auth authentication** for write operations
-- 🌐 **Complete REST API** with versioning (`/api/v1/`)
-- 🌤️ **Weather endpoint** - service status overview
-- 🔒 **Optional HTTPS/TLS support** for security
-- 📚 **Auto-generated API documentation**
-- ✅ **Complete test suite**
+Clariti helps you manage service status pages and track system health:
 
-## 🚀 Quick start
+- **Component Management** - Organize services in Platform → Instance → Component structure  
+- **Incident Tracking** - Create and manage system outages with severity levels
+- **Maintenance Planning** - Schedule and track planned maintenance windows
+- **Monitoring Integration** - Built-in Prometheus metrics for system health
+- **REST API** - Complete API for status page integration
+- **Multiple Storage** - Use RAM for testing or S3/MinIO for production
+- **Authentication** - Secure admin operations with basic auth
 
-### 1. Configuration
+## Quick Start
+
+### 1. Get Configuration
 
 ```bash
-# Copy example configuration
-cp config.sample.yaml config.yaml
+# Copy example config
+cp local/config/config.s3.yaml config.yaml
 
-# Customize configuration
+# Edit settings
 nano config.yaml
 ```
 
-### 2. Build and run
+### 2. Build and Run
 
+**Using GoReleaser (recommended):**
 ```bash
-# Build server
+# Build for your platform
+goreleaser build --snapshot --clean --single-target
+
+# Run server
+./dist/clariti-server_linux_amd64_v1/clariti-server --config config.yaml serve
+```
+
+**Using Go directly:**
+```bash
+# Build manually
 go build -o clariti-server ./server
 
-# Start HTTP server
-./clariti-server
+# Run server
+./clariti-server --config config.yaml serve
 ```
 
-### 3. Test HTTPS (optional)
+### 3. Test Setup
 
 ```bash
-# Generate certificates and test HTTPS
-cd local/
-./test-https.sh
+# Check health
+curl http://localhost:8080/health
+
+# View service status
+curl http://localhost:8080/api/v1/weather
+
+# See metrics
+curl http://localhost:8080/metrics
 ```
 
-## 📁 Project structure
+## Project Structure
 
 ```
-├── server/          # REST API server code
-├── models/          # Data models (events, components)
-├── utils/           # Shared utilities
-├── tests/           # Integration tests
-├── local/           # Local development and testing (not committed)
-├── config.sample.yaml  # Example configuration
-└── .gitignore       # Files ignored by Git
+clariti/
+├── server/               # Main REST API server
+│   ├── main.go          # Application entry point
+│   ├── core/            # Server setup and routing
+│   ├── handlers/        # HTTP request handlers  
+│   ├── middleware/      # HTTP middleware (auth, metrics)
+│   ├── routes/          # API route definitions
+│   ├── drivers/         # Storage backend drivers
+│   ├── metrics/         # Prometheus metrics setup
+│   └── config/          # Configuration loading
+├── models/              # Data models and structures
+│   ├── event/           # Incident and maintenance models
+│   └── component/       # Component hierarchy models
+├── logger/              # Application logging
+├── utils/               # Helper utilities  
+├── local/               # Development files (not in git)
+├── .goreleaser.yaml     # Multi-platform build setup
+└── config.*.yaml        # Configuration examples
 ```
 
-## 🔧 Configuration
+## Configuration
 
-See [`config.sample.yaml`](config.sample.yaml) for complete example.
+Complete storage configuration guide: [Storage Drivers](STORAGE_DRIVERS.md)
 
-### Minimal configuration
+### Basic Setup
 
 ```yaml
+# Server settings
 server:
   host: "localhost"
   port: "8080"
 
+# Admin access
 auth:
   admin_username: "admin"
-  admin_password: "your-password"
+  admin_password: "your-secure-password"
 
+# Logging
+logging:
+  level: "info"
+  format: "text"
+
+# Storage (use "ram" for testing)
+storage:
+  driver: "ram"
+
+# Your service components
 components:
   platforms:
-    - name: "Production"
+    - name: "Production Environment"
       code: "PROD"
+      base_url: "https://api.yoursite.com"
       instances:
-        - name: "API"
-          code: "api"
+        - name: "Web Services"
+          code: "web"
           components:
-            - name: "REST API"
-              code: "rest"
+            - name: "Load Balancer"
+              code: "lb-01"
+            - name: "API Server"
+              code: "api-01"
 ```
 
-### HTTPS configuration
+### Production Storage (S3/MinIO)
 
 ```yaml
-server:
-  host: "localhost"
-  port: "8443"
-  cert_file: "path/to/certificate.crt"
-  key_file: "path/to/private.key"
+storage:
+  driver: "s3"
+  s3:
+    region: "us-east-1"
+    bucket: "clariti-status"
+    endpoint: "http://localhost:9000"  # For MinIO
+    access_key_id: "admin"
+    secret_access_key: "password"
+    prefix: "clariti/"
 ```
 
-## 🌐 Endpoints API
+## API Reference
 
-- **Health**: `GET /health`
-- **Documentation**: `GET /api/v1/docs`
-- **Weather**: `GET /api/v1/weather`
-- **Incidents**: `GET|POST /api/v1/incidents`
-- **Maintenances**: `GET|POST /api/v1/planned-maintenances`
+### System Health
+- `GET /health` - Check if server is running
+- `GET /api/v1/weather` - Get overall service status  
+- `GET /metrics` - Prometheus metrics endpoint
+- `GET /api/docs` and `GET /api/v1/docs` - API documentation with version info
 
-## 🧪 Testing and development
+### Components
+- `GET /api/v1/components` - List all components
+- `GET /api/v1/components/hierarchy` - Get component tree
+- `GET /api/v1/platforms` - List platforms only
+- `GET /api/v1/instances` - List instances only
 
-### `local/` directory
+### Incidents (Authentication Required for POST/PUT/DELETE)
+- `GET /api/v1/incidents` - List all incidents
+- `POST /api/v1/incidents` - Create new incident
+- `GET /api/v1/incidents/{id}` - Get specific incident
+- `PUT /api/v1/incidents/{id}` - Update incident
+- `DELETE /api/v1/incidents/{id}` - Delete incident
 
-The `local/` directory contains all test and development files that are not committed:
+### Maintenance (Authentication Required for POST/PUT/DELETE)
+- `GET /api/v1/planned-maintenances` - List all maintenances
+- `POST /api/v1/planned-maintenances` - Schedule maintenance
+- `GET /api/v1/planned-maintenances/{id}` - Get specific maintenance
+- `PUT /api/v1/planned-maintenances/{id}` - Update maintenance  
+- `DELETE /api/v1/planned-maintenances/{id}` - Cancel maintenance
 
-- 📋 `config.example.yaml` - Example configuration for development
-- 🔐 `generate-certs.sh` - Self-signed certificate generation
-- 🌐 `test-https.sh` - Complete HTTPS test script
-- 🗄️ `*.crt`, `*.key` - Generated certificates (ignored by Git)
+## Monitoring
 
-### Automated tests
+Clariti exports Prometheus metrics for monitoring:
+
+### HTTP Metrics
+- `clariti_http_requests_total` - Request count by method, path, status
+- `clariti_http_request_duration_seconds` - Response time distribution
+
+### System Metrics
+- `clariti_uptime_seconds` - Server uptime since start
+- `clariti_components_total` - Number of monitored components
+- `clariti_application_info` - Version and build information
+
+### Business Metrics
+- `clariti_incidents_total` - Current incidents by severity and status
+- `clariti_planned_maintenances_total` - Scheduled maintenances by status
+
+## Development
+
+See [Local Development Guide](local/README.md) for development setup.
+
+### Running Tests
 
 ```bash
 # All tests
 go test ./...
 
-# Tests with coverage
+# With coverage
 go test -cover ./...
 
-# Specific integration tests
+# Integration tests only
 go test ./tests/...
 ```
 
-## 📚 Detailed documentation
+### Building
 
-- [Server documentation](server/README.md) - Complete REST API server guide
-- [Local documentation](local/README.md) - Development and local testing guide
+```bash
+# Single platform (current OS)
+goreleaser build --snapshot --clean --single-target
 
-## 🔒 Security
+# All supported platforms
+goreleaser build --snapshot --clean
 
-- Basic Auth authentication for write endpoints
-- Optional HTTPS/TLS support with custom certificates
-- CORS configured for cross-origin calls
-- Input validation on all endpoints
+# Test release process
+goreleaser release --snapshot --clean --skip=publish
+```
 
-## 🤝 Contributing
+## Security
 
-1. Files in `local/` are ignored by Git
-2. Use `config.sample.yaml` as base for your configurations
+- **Basic Authentication** protects write operations (POST/PUT/DELETE)
+- **CORS support** for web browser integration
+- **Input validation** on all endpoints
+- **HTTPS/TLS ready** with custom certificate support
+- **Structured logging** for security audit trails
+
+## Documentation
+
+- **[Storage Drivers Guide](STORAGE_DRIVERS.md)** - How to configure different storage backends
+- **[Local Development](local/README.md)** - Development and testing guide
+
+## Contributing
+
+1. Write code and documentation in simple English
+2. Use the `local/` directory for development (ignored by git)
 3. Run tests before committing: `go test ./...`
+4. Follow existing code style and logging patterns
+
+## Supported Platforms
+
+**Operating Systems:**
+- Linux (AMD64, ARM64, 386, ARM v6/v7)  
+- Windows (AMD64, 386)
+- macOS (Intel, Apple Silicon)
+- FreeBSD (AMD64, ARM64, 386, ARM v6/v7)
+
+**Release Formats:**
+- TAR.GZ and ZIP archives
+- SHA256 checksums included
+- Sample configurations included
+
+---
+
+**Ready to use!** Start monitoring your services with Clariti.
