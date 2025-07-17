@@ -128,9 +128,9 @@ func (c *Config) GetAllInstances() []component.Instance {
 	return instances
 }
 
-// GetAllComponents returns all components as component.Component slice
-func (c *Config) GetAllComponents() []component.Component {
-	var components []component.Component
+// GetAllComponents returns all components as []*component.Component slice to avoid copying sync.RWMutex
+func (c *Config) GetAllComponents() []*component.Component {
+	var components []*component.Component
 	for _, platform := range c.Components.Platforms {
 		platformModel := &component.Platform{
 			BaseComponent: component.BaseComponent{
@@ -147,7 +147,7 @@ func (c *Config) GetAllComponents() []component.Component {
 				Platform: platformModel,
 			}
 			for _, comp := range instance.Components {
-				newComp := component.Component{
+				newComp := &component.Component{
 					BaseComponent: component.BaseComponent{
 						Name: comp.Name,
 						Code: comp.Code,
