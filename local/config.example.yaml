@@ -1,0 +1,28 @@
+# Local development configuration for Clariti
+# Copy this file and customize for your local environment
+
+server:
+  host: "localhost"
+  port: "8080"
+  # For HTTPS testing, uncomment and provide paths to your certificates:
+  # cert_file: "local/server.crt"
+  # key_file: "local/server.key"
+
+auth:
+  admin_username: "admin"
+  admin_password: "dev123"
+
+components:
+  platforms:
+    - name: "Development"
+      code: "DEV"
+      instances:
+        - name: "Local API"
+          code: "local"
+          components:
+            - name: "API Server"
+              code: "api"
+            - name: "Database"
+              code: "db"
+            - name: "Cache"
+              code: "cache"

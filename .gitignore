@@ -1,3 +1,71 @@
-.idea/*
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# IDE-specific files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# Local development and testing
+local/*.crt
+local/*.key
+local/*.pem
+local/config.yaml
+local/server.crt
+local/server.key
 config.yaml
+*.pem
+*.crt
+*.key
+*.p12
+*.pfx
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+tmp/
+temp/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Coverage reports
+coverage.html
+coverage.out
+
+# Build artifacts
+build/
+dist/
 clariti-server
+clariti

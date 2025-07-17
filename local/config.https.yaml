@@ -1,0 +1,23 @@
+# Configuration for HTTPS testing
+server:
+  host: "localhost"
+  port: "8443"
+  cert_file: "local/server.crt"
+  key_file: "local/server.key"
+
+auth:
+  admin_username: "admin"
+  admin_password: "https123"
+
+components:
+  platforms:
+    - name: "HTTPS Test"
+      code: "HTTPS"
+      instances:
+        - name: "Secure API"
+          code: "secure"
+          components:
+            - name: "TLS API"
+              code: "api"
+            - name: "Secure Database"
+              code: "db"
